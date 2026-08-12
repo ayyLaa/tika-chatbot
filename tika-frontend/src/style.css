@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* Kurumsal Renk Paleti */
+  --color-tika-red: #E30613;
+  --color-tika-redHover: #C80510;
+  --color-tika-navy: #0B1B3D;
+  --color-tika-dark: #1A1A1A;
+  --color-tika-bgLight: #F4F5F7;
+  --color-tika-bubbleBot: #F0F2F5;
+  --color-tika-textMuted: #6C757D;
+  --color-tika-textBody: #333333;
+  --color-tika-footer: #777777;
+
+  /* Font Aileleri */
+  --font-cursive: "Caveat", cursive;
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+
+  /* Özel Mesaj Balonu Yuvarlatmaları */
+  --radius-user-bubble: 12px 12px 2px 12px;
+  --radius-bot-bubble: 12px 12px 12px 2px;
+}
+
+/* Tipografi Hiyerarşisi Sınıfları */
+.font-slogan {
+  font-family: var(--font-cursive);
+  font-size: 34px;
+  color: #FFFFFF;
+}
+
+.text-h1 {
+  font-size: 30px;
+  font-weight: 700;
+  color: #1A1A1A;
+}
+
+.text-h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1A1A1A;
+}
+
+.text-body-chat {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: #333333;
+}
+
+.text-footer-muted {
+  font-size: 11px;
+  font-weight: 400;
+  color: #777777;
+}
