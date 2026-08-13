@@ -38,3 +38,4 @@ app:
 ai:
   service:
     url: http://localhost:8000
+    internal-key: ${INTERNAL_API_KEY}

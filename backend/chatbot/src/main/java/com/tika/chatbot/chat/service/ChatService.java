@@ -6,6 +6,8 @@ import com.tika.chatbot.chat.model.Message;
 import com.tika.chatbot.chat.repository.ChatSessionRepository;
 import com.tika.chatbot.chat.repository.MessageRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -23,6 +25,9 @@ public class ChatService {
     @Value("${ai.service.url}")
     private String aiServiceUrl;
 
+    @Value("${ai.service.internal-key}")
+    private String internalApiKey;
+
     public ChatService(RestTemplate restTemplate, ChatSessionRepository sessionRepository,
                        MessageRepository messageRepository) {
         this.restTemplate = restTemplate;
@@ -31,7 +36,6 @@ public class ChatService {
     }
 
     public ChatResponse askQuestion(UUID userId, UUID sessionId, String question) {
-        // 1. nova sesija ako ne postoji
         UUID actualSessionId = sessionId;
         if (actualSessionId == null) {
             ChatSession session = new ChatSession();
@@ -40,21 +44,24 @@ public class ChatService {
             actualSessionId = sessionRepository.save(session).getId();
         }
 
-        // 2. povuci historiju
         List<Message> history = messageRepository.findBySessionIdOrderByCreatedAtAsc(actualSessionId);
         List<ConversationTurnDto> historyDto = history.stream()
                 .map(m -> new ConversationTurnDto(m.getQuestion(), m.getAnswer()))
                 .collect(Collectors.toList());
 
-        // 3. pozovi Python /query
         PythonQueryRequest pyRequest = new PythonQueryRequest(
                 actualSessionId.toString(), question, 5, historyDto
         );
+
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Internal-Key", internalApiKey);
+        HttpEntity<PythonQueryRequest> requestEntity = new HttpEntity<>(pyRequest, headers);
+
         PythonQueryResponse response = restTemplate.postForObject(
-                aiServiceUrl + "/query", pyRequest, PythonQueryResponse.class
+                aiServiceUrl + "/query", requestEntity, PythonQueryResponse.class
         );
 
-        // 4. sačuvaj poruku
         Message message = new Message();
         message.setSessionId(actualSessionId);
         message.setQuestion(question);
