@@ -1,4 +1,10 @@
 package com.tika.chatbot.chat.repository;
 
-public class ChatSessionRepository {
+import com.tika.chatbot.chat.model.ChatSession;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
+import java.util.UUID;
+
+public interface ChatSessionRepository extends JpaRepository<ChatSession, UUID> {
+    List<ChatSession> findByUserIdOrderByCreatedAtDesc(UUID userId);
 }

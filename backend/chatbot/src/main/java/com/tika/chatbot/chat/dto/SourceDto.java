@@ -1,4 +1,3 @@
 package com.tika.chatbot.chat.dto;
 
-public class SourceDto {
-}
+public record SourceDto(String document, Integer page, String chunkId) {}

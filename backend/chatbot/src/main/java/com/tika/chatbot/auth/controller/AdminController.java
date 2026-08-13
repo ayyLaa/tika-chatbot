@@ -3,6 +3,7 @@ package com.tika.chatbot.auth.controller;
 import com.tika.chatbot.auth.config.CustomUserDetails;
 import com.tika.chatbot.auth.dto.InviteRequest;
 import com.tika.chatbot.auth.dto.UserSummaryDto;
+import com.tika.chatbot.auth.dto.VectorStatusResponse;
 import com.tika.chatbot.auth.model.PasswordResetRequest;
 import com.tika.chatbot.auth.repository.PasswordResetRequestRepository;
 import com.tika.chatbot.auth.service.AdminService;
@@ -15,7 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("admin/")
+@RequestMapping("/admin")
 public class AdminController {
     private final AdminService adminService;
     private final PasswordResetRequestRepository passwordResetRequestRepository;
@@ -68,5 +69,10 @@ public class AdminController {
     @GetMapping("/password-reset-requests/all")
     public ResponseEntity<List<PasswordResetRequest>> getAllResetRequests() {
         return ResponseEntity.ok(passwordResetRequestRepository.findAll());
+    }
+
+    @GetMapping("/vector-status")
+    public ResponseEntity<VectorStatusResponse> getVectorStatus() {
+        return ResponseEntity.ok(adminService.getVectorStatus());
     }
 }

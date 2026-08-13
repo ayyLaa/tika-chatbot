@@ -1,23 +1,25 @@
 package com.tika.chatbot.auth.service;
 
-import com.tika.chatbot.auth.dto.UserSummaryDto;
+import com.tika.chatbot.auth.dto.*;
 import com.tika.chatbot.auth.exception.EmailAlreadyExistsException;
 import com.tika.chatbot.auth.exception.InviteAlreadyExistsException;
 import com.tika.chatbot.auth.exception.UserNotFoundException;
 import com.tika.chatbot.auth.model.PasswordResetRequest;
 import com.tika.chatbot.auth.model.User;
 import com.tika.chatbot.auth.model.UserInvite;
+import com.tika.chatbot.chat.repository.MessageFeedbackRepository;
 import com.tika.chatbot.auth.repository.PasswordResetRequestRepository;
 import com.tika.chatbot.auth.repository.UserInviteRepository;
 import com.tika.chatbot.auth.repository.UserRepository;
+import com.tika.chatbot.chat.repository.ChunkRepository;
+import com.tika.chatbot.chat.repository.DocumentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.tika.chatbot.chat.repository.MessageRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-
-import static java.util.stream.Collectors.toList;
 
 @Service
 public class AdminService {
@@ -26,14 +28,22 @@ public class AdminService {
     private final EmailService emailService;
     private final UserInviteRepository inviteRepository;
     private final PasswordResetRequestRepository resetRequestRepository;
+    private final DocumentRepository documentRepository;
+    private final ChunkRepository chunkRepository;
+    private final MessageRepository messageRepository;
 
+    private final MessageFeedbackRepository messageFeedbackRepository;
 
-    public AdminService(UserRepository userRepository, AuditLogService auditLogService, EmailService emailService, UserInviteRepository inviteRepository, PasswordResetRequestRepository resetRequestRepository) {
+    public AdminService(UserRepository userRepository, AuditLogService auditLogService, EmailService emailService, UserInviteRepository inviteRepository, PasswordResetRequestRepository resetRequestRepository, DocumentRepository documentRepository, ChunkRepository chunkRepository, MessageRepository messageRepository, MessageFeedbackRepository messageFeedbackRepository) {
         this.userRepository = userRepository;
         this.auditLogService = auditLogService;
         this.emailService = emailService;
         this.inviteRepository = inviteRepository;
         this.resetRequestRepository = resetRequestRepository;
+        this.documentRepository = documentRepository;
+        this.chunkRepository = chunkRepository;
+        this.messageRepository = messageRepository;
+        this.messageFeedbackRepository = messageFeedbackRepository;
     }
 
     @Transactional
@@ -104,5 +114,38 @@ public class AdminService {
                 u.getId(), u.getFullName(), u.getUsername(), u.getEmail(),
                 u.getDepartment(), u.getUserRole(), u.getIsActive(), null
         )).toList();
+    }
+
+    public VectorStatusResponse getVectorStatus() {
+        long indexed = documentRepository.countByDocStatus("ready");
+        long pending = documentRepository.countByDocStatus("pending");
+        long failed = documentRepository.countByDocStatus("failed");
+        long totalChunks = chunkRepository.count();
+
+        List<DocumentStatusDto> docs = documentRepository.findDocumentStatusSummary().stream()
+                .map(row -> new DocumentStatusDto(
+                        (String) row[0],
+                        (String) row[1],
+                        ((Number) row[2]).longValue(),
+                        row[3] != null ? row[3].toString() : "—"
+                ))
+                .toList();
+
+        return new VectorStatusResponse(indexed, pending, failed, totalChunks, docs);
+    }
+
+    public AnalyticsResponse getAnalytics() {
+        Long tokens = messageRepository.sumTokensLast30Days();
+        Double avgTime = messageRepository.avgResponseTimeLast30Days();
+        long activeUsers = messageRepository.countActiveUsersLast30Days();
+        Double satisfaction = messageFeedbackRepository.satisfactionPercentage();
+
+        List<DailyUsageDto> daily = messageRepository.dailyMessageCountsLast14Days().stream()
+                .map(row -> new DailyUsageDto((String) row[0], ((Number) row[1]).longValue()))
+                .toList();
+
+        Double avgTimeSeconds = avgTime != null ? avgTime / 1000.0 : null;
+
+        return new AnalyticsResponse(tokens, avgTimeSeconds, activeUsers, satisfaction, daily);
     }
 }
