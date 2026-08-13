@@ -95,31 +95,4 @@ public class User {
         this.emailVerified = emailVerified;
     }
 
-    @Column(name = "verification_token",  unique = true)
-    private String verificationToken;
-    public String getVerificationToken() {
-        return verificationToken;
-    }
-    public void setVerificationToken(String verificationToken) {
-        this.verificationToken = verificationToken;
-    }
-
-    @Column(name = "reset_token")
-    private String resetToken;
-    public String getResetToken() {
-        return resetToken;
-    }
-    public void setResetToken(String resetToken) {
-        this.resetToken = resetToken;
-    }
-
-    @Column(name = "reset_token_expires")
-    private LocalDateTime resetTokenExpires;
-    public LocalDateTime getResetTokenExpires() {
-        return resetTokenExpires;
-    }
-    public void setResetTokenExpires(LocalDateTime resetTokenExpires) {
-        this.resetTokenExpires = resetTokenExpires;
-    }
-
 }

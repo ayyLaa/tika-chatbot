@@ -1,8 +1,6 @@
 package com.tika.chatbot.auth.controller;
 
-import com.tika.chatbot.auth.dto.AuthResponse;
-import com.tika.chatbot.auth.dto.LoginRequest;
-import com.tika.chatbot.auth.dto.SignupRequest;
+import com.tika.chatbot.auth.dto.*;
 import com.tika.chatbot.auth.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -18,22 +16,11 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @PostMapping("/signup")
-    public ResponseEntity<Void> signup(@Valid @RequestBody SignupRequest request) {
-        authService.register(request);
-        return ResponseEntity.status(201).build();
-    }
-
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
 
-    @GetMapping("/verify")
-    public ResponseEntity<Void> verify(@RequestParam String token) {
-        authService.verifyEmail(token);
-        return ResponseEntity.ok().build();
-    }
 
     @PostMapping("/forgot-password")
     public ResponseEntity<Void> forgotPassword(@RequestParam String email) {
@@ -46,4 +33,17 @@ public class AuthController {
         authService.resetPassword(token, newPassword);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/accept-invite")
+    public ResponseEntity<Void> acceptInvite(@Valid @RequestBody AcceptInviteRequest request) {
+        authService.acceptInvite(request.token(), request.fullName(), request.password(),
+                request.phoneNumber(), request.department());
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/invite-details")
+    public ResponseEntity<InviteDetailsResponse> getInviteDetails(@RequestParam String token) {
+        return ResponseEntity.ok(authService.getInviteDetails(token));
+    }
+
 }

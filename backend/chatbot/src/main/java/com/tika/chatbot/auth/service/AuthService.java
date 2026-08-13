@@ -2,7 +2,11 @@ package com.tika.chatbot.auth.service;
 
 import com.tika.chatbot.auth.dto.*;
 import com.tika.chatbot.auth.exception.*;
+import com.tika.chatbot.auth.model.PasswordResetRequest;
 import com.tika.chatbot.auth.model.User;
+import com.tika.chatbot.auth.model.UserInvite;
+import com.tika.chatbot.auth.repository.PasswordResetRequestRepository;
+import com.tika.chatbot.auth.repository.UserInviteRepository;
 import com.tika.chatbot.auth.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,43 +22,44 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final EmailService emailService;
+    private final UserInviteRepository inviteRepository;
+    private final PasswordResetRequestRepository resetRequestRepository;
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                       JwtService jwtService, EmailService emailService) {
+                       JwtService jwtService, EmailService emailService, UserInviteRepository inviteRepository, PasswordResetRequestRepository resetRequestRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.emailService = emailService;
+        this.inviteRepository = inviteRepository;
+        this.resetRequestRepository = resetRequestRepository;
     }
 
-    @Transactional
-    public void register(SignupRequest request) {
-        String generatedUsername = generateUsername(request.fullName());
+    public void acceptInvite(String token, String fullName, String password, String phoneNumber, String department) {
+        UserInvite invite = inviteRepository.findByInviteTokenAndStatus(token, "pending")
+                .orElseThrow(() -> new InvalidTokenException("Nevažeći ili istekao poziv."));
 
-        if (userRepository.existsByUsername(generatedUsername)) {
-            throw new UsernameAlreadyExistsException(generatedUsername);
-        }
-        if (userRepository.existsByEmail(request.email())) {
-            throw new EmailAlreadyExistsException(request.email());
+        if (invite.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new InvalidTokenException("Poziv je istekao.");
         }
 
         User user = new User();
-        user.setFullName(request.fullName());
-        user.setUsername(generatedUsername);
-        user.setEmail(request.email());
-        user.setPhoneNumber(request.phone_number());
-        user.setPasswordHash(passwordEncoder.encode(request.password()));
-        user.setDepartment(request.department());
-        user.setUserRole("user");
-        user.setEmailVerified(false);
+        user.setFullName(fullName);
+        user.setUsername(generateUsername(fullName));
+        user.setEmail(invite.getEmail());
+        user.setPhoneNumber(phoneNumber);
+        user.setPasswordHash(passwordEncoder.encode(password));
+        user.setDepartment(department);
+        user.setUserRole(invite.getInvitedRole());
+        user.setEmailVerified(true);
         user.setIsActive(true);
 
-        String verificationToken = UUID.randomUUID().toString();
-        user.setVerificationToken(verificationToken);
-
         userRepository.save(user);
-        emailService.sendVerificationEmail(user.getEmail(), verificationToken);
+
+        invite.setStatus("accepted");
+        inviteRepository.save(invite);
     }
+
     private String normalizeToUsername(String fullName) {
         return fullName.toLowerCase()
                 .replaceAll("[čćç]", "c")
@@ -79,15 +84,7 @@ public class AuthService {
         return candidate;
     }
 
-    @Transactional
-    public void verifyEmail(String token) {
-        User user = userRepository.findByVerificationToken(token)
-                .orElseThrow(() -> new InvalidTokenException("Nevažeći ili istekao token za verifikaciju."));
 
-        user.setEmailVerified(true);
-        user.setVerificationToken(null);
-        userRepository.save(user);
-    }
 
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
@@ -109,28 +106,40 @@ public class AuthService {
 
     @Transactional
     public void requestPasswordReset(String email) {
-
         userRepository.findByEmail(email).ifPresent(user -> {
-            String resetToken = UUID.randomUUID().toString();
-            user.setResetToken(resetToken);
-            user.setResetTokenExpires(LocalDateTime.now().plusHours(1));
-            userRepository.save(user);
-            emailService.sendPasswordResetEmail(user.getEmail(), resetToken);
+            PasswordResetRequest req = new PasswordResetRequest();
+            req.setUserId(user.getId());
+            resetRequestRepository.save(req);
+
         });
     }
 
     @Transactional
     public void resetPassword(String token, String newPassword) {
-        User user = userRepository.findByResetToken(token)
+        PasswordResetRequest req = resetRequestRepository.findByResetToken(token)
                 .orElseThrow(() -> new InvalidTokenException("Nevažeći token za reset lozinke."));
 
-        if (user.getResetTokenExpires().isBefore(LocalDateTime.now())) {
+        if (!"approved".equals(req.getStatus())) {
+            throw new InvalidTokenException("Token je već iskorišten ili nije odobren.");
+        }
+
+        if (req.getTokenExpires().isBefore(LocalDateTime.now())) {
             throw new InvalidTokenException("Token je istekao. Zatražite novi reset lozinke.");
         }
 
+        User user = userRepository.findById(req.getUserId())
+                .orElseThrow(() -> new UserNotFoundException(req.getUserId()));
+
         user.setPasswordHash(passwordEncoder.encode(newPassword));
-        user.setResetToken(null);
-        user.setResetTokenExpires(null);
         userRepository.save(user);
+
+        req.setStatus("used");
+        resetRequestRepository.save(req);
+    }
+
+    public InviteDetailsResponse getInviteDetails(String token) {
+        UserInvite invite = inviteRepository.findByInviteTokenAndStatus(token, "pending")
+                .orElseThrow(() -> new InvalidTokenException("Nevažeći ili istekao poziv."));
+        return new InviteDetailsResponse(invite.getEmail(), invite.getInvitedRole());
     }
 }

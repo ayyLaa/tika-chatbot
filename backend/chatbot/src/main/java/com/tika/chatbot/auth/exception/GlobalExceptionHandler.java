@@ -87,6 +87,10 @@ public class GlobalExceptionHandler {
         logger.error("Unexpected error {}", req.getRequestURI(), ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "There was an error on the server.", req);
     }
+    @ExceptionHandler(InviteAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleInviteExists(InviteAlreadyExistsException ex, HttpServletRequest req) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), req);
+    }
 
     private ResponseEntity<ErrorResponse> build(HttpStatus status, String message, HttpServletRequest req) {
         ErrorResponse error = new ErrorResponse(message, status.value(), req.getRequestURI());

@@ -20,23 +20,23 @@ public class EmailService {
         this.mailSender = mailSender;
     }
 
-    public void sendVerificationEmail(String toEmail, String token) {
-        String verificationLink = baseUrl + "/auth/verify?token=" + token;
+
+    public void sendInviteEmail(String toEmail, String token) {
+        String inviteLink = baseUrl + "/accept-invite?token=" + token;  // frontend ruta, ne backend
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromAddress);
         message.setTo(toEmail);
-        message.setSubject("Kayıt Onayı");
+        message.setSubject("Kayıt Daveti - Dahili Asistan");
         message.setText(
                 "Sayın kullanıcı,\n\n" +
-                        "E-posta adresinizi onaylamak için aşağıdaki bağlantıya tıklayınız:\n\n" +
-                        verificationLink + "\n\n" +
-                        "Bağlantının geçerlilik süresi 24 saattir.\n\n" +
-                        "Eğer bu hesabı siz oluşturmadıysanız, bu e-postayı dikkate almayınız."
+                        "TİKA dahili asistan sistemine davet edildiniz. Hesabınızı oluşturmak için aşağıdaki bağlantıya tıklayınız:\n\n" +
+                        inviteLink + "\n\n" +
+                        "Bağlantının geçerlilik süresi 7 gündür.\n\n" +
+                        "Bu daveti siz talep etmediyseniz, lütfen sistem yöneticinizle iletişime geçiniz."
         );
         mailSender.send(message);
     }
-
     public void sendPasswordResetEmail(String toEmail, String resetToken) {
         String resetLink = baseUrl + "/auth/reset-password?token=" + resetToken;
 
