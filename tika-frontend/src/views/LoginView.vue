@@ -30,12 +30,12 @@
       <!-- Tam ekrana orantılı geniş kart -->
       <div class="w-full max-w-3xl bg-white p-8 sm:p-10 rounded-2xl shadow-xs border border-slate-100">
         
-        <!-- Sekme Geçişi (Login / Sign Up) -->
-        <div class="flex gap-2 p-1 bg-tika-bubbleBot rounded-lg mb-6">
+        <!-- Sekme Geçişi (Sadece Davet Token'ı Varsa Sign Up Görünür) -->
+        <div v-if="hasInviteToken" class="flex gap-2 p-1 bg-tika-bubbleBot rounded-lg mb-6">
           <button 
             @click="isLogin = true"
             :class="[
-              'flex-1 py-2 text-[14px] font-semibold rounded-md transition-all duration-200',
+              'flex-1 py-2 text-[14px] font-semibold rounded-md transition-all duration-200 cursor-pointer',
               isLogin ? 'bg-tika-red text-white shadow-xs' : 'text-tika-textMuted hover:text-tika-dark'
             ]"
           >
@@ -44,7 +44,7 @@
           <button 
             @click="isLogin = false"
             :class="[
-              'flex-1 py-2 text-[14px] font-semibold rounded-md transition-all duration-200',
+              'flex-1 py-2 text-[14px] font-semibold rounded-md transition-all duration-200 cursor-pointer',
               !isLogin ? 'bg-tika-red text-white shadow-xs' : 'text-tika-textMuted hover:text-tika-dark'
             ]"
           >
@@ -58,7 +58,7 @@
             {{ isLogin ? 'Welcome Back' : 'Create Your Account' }}
           </h2>
           <p class="text-footer-muted text-[13px]">
-            {{ isLogin ? 'Get full access to the TİKA internal AI assistant.' : 'Get full access to the TİKA internal AI assistant.' }}
+            {{ isLogin ? 'Get full access to the TİKA internal AI assistant.' : 'Complete your registration via corporate invitation.' }}
           </p>
         </div>
 
@@ -133,17 +133,18 @@
           <!-- Submit Butonu -->
           <button 
             type="submit"
-            class="w-full mt-3 py-2.5 bg-tika-red hover:bg-tika-redHover text-white text-[14px] font-semibold rounded-lg shadow-xs transition-colors duration-200"
+            class="w-full mt-3 py-2.5 bg-tika-red hover:bg-tika-redHover text-white text-[14px] font-semibold rounded-lg shadow-xs transition-colors duration-200 cursor-pointer"
           >
             {{ isLogin ? 'LOG IN →' : 'Create Account →' }}
           </button>
         </form>
 
-        <p class="mt-6 text-center text-footer-muted text-xs">
+        <!-- Sadece Davet Token'ı Varsa Alt Geçiş Butonu Görünür -->
+        <p v-if="hasInviteToken" class="mt-6 text-center text-footer-muted text-xs">
           {{ isLogin ? "Don't have an account?" : "Already have an account?" }}
           <button 
             @click="isLogin = !isLogin" 
-            class="text-tika-red font-semibold hover:underline ml-1"
+            class="text-tika-red font-semibold hover:underline ml-1 cursor-pointer"
           >
             {{ isLogin ? 'Sign Up' : 'Log In' }}
           </button>
@@ -155,12 +156,15 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import TikaLogo from '../components/TikaLogo.vue'
 
+const route = useRoute()
 const router = useRouter()
+
 const isLogin = ref(true)
+const hasInviteToken = ref(false)
 
 const form = reactive({
   name: '',
@@ -170,7 +174,28 @@ const form = reactive({
   phone: ''
 })
 
+onMounted(() => {
+  // Davet linki kontrolü (URL'de token veya register path'i varsa Sign Up aktif olur)
+  if (route.query.token || route.query.invite || route.path.includes('register')) {
+    hasInviteToken.value = true
+    isLogin.value = false
+    if (route.query.email) {
+      form.email = route.query.email
+    }
+  }
+})
+
 const handleAuth = () => {
-  router.push('/')
+  if (isLogin.value) {
+    // Admin yetkisi kontrolü
+    if (form.email.includes('admin') || form.email.includes('elif')) {
+      router.push('/admin')
+    } else {
+      router.push('/')
+    }
+  } else {
+    alert('Hesabınız başarıyla oluşturuldu! Şimdi giriş yapabilirsiniz.')
+    isLogin.value = true
+  }
 }
 </script>

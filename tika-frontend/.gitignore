@@ -23,4 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
+node_modules/
+data_scraper/downloaded_pdfs/
+*.pdf
+
 data_scraper/downloaded_pdfs/

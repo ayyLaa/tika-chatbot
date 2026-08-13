@@ -1,9 +1,9 @@
 <template>
   <div class="h-screen w-full flex flex-col bg-[#F0F2F5] font-sans overflow-hidden">
     
-    <!-- Header (Koyu Lacivert / Gece Mavisi: #031B39) -->
+    <!-- Header (Koyu Lacivert: #031B39) -->
     <header class="h-16 bg-[#031B39] px-6 flex items-center justify-between z-20 shrink-0 shadow-md">
-      <!-- Sol: TİKA Logo (Fotoğraf/Resim Alanı) -->
+      <!-- Sol: TİKA Logo -->
       <div class="flex items-center">
         <img 
           src="../assets/logo.png" 
@@ -68,7 +68,7 @@
     <div class="flex flex-1 overflow-hidden">
       <!-- Sol Sidebar (Geçmiş ve Yeni Sohbet) -->
       <aside class="w-64 bg-[#EBF1F8]/50 border-r border-slate-200 flex flex-col p-4 shrink-0">
-        <!-- New Chat Butonu (TİKA Kırmızı: #E30613) -->
+        <!-- New Chat Butonu -->
         <button 
           @click="startNewChat"
           class="w-full bg-[#E30613] hover:bg-[#c40510] text-white text-[14px] font-semibold py-2.5 px-4 rounded-lg flex items-center justify-between shadow-xs transition duration-200 mb-6 cursor-pointer"
@@ -100,7 +100,7 @@
         </div>
       </aside>
 
-      <!-- Sağ Ana Sohbet Alanı (Açık Gri: #F0F2F5) -->
+      <!-- Sağ Ana Sohbet Alanı -->
       <main class="flex-1 flex flex-col bg-[#F0F2F5] relative overflow-hidden">
         
         <!-- Karşılama Ekranı (Eğer Mesaj Yoksa) -->
@@ -108,7 +108,6 @@
           v-if="messages.length === 0" 
           class="flex-1 flex flex-col items-center justify-center p-6 text-center"
         >
-          <!-- TİKA Kırmızı Ay-Yıldız İkonu -->
           <img
             src="../assets/ay-yildiz.png"
             alt="TİKA Ay Yıldız" 
@@ -122,7 +121,7 @@
             Ask about TİKA programs, field procedures or reporting I'll help you find it.
           </p>
 
-          <!-- Departmana Özel Dinamik Öneri Soruları (4 Adet) -->
+          <!-- Departmana Özel Dinamik Öneri Soruları -->
           <div class="flex flex-col gap-3 w-full max-w-lg">
             <button 
               v-for="(suggestion, i) in currentDepartmentPrompts" 
@@ -135,7 +134,7 @@
           </div>
         </div>
 
-        <!-- Sohbet Mesaj Akışı (Eğer Mesaj Varsa) -->
+        <!-- Sohbet Mesaj Akışı -->
         <div 
           v-else 
           class="flex-1 overflow-y-auto p-6 md:p-10 space-y-6 max-w-4xl mx-auto w-full"
@@ -153,8 +152,20 @@
               <div class="w-8 h-8 rounded-full bg-[#E30613] text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 shadow-xs">
                 AI
               </div>
-              <div class="bg-[#EBF1F8] text-[#031B39] text-[14px] leading-relaxed p-4 rounded-2xl rounded-tl-none border border-slate-200/60 shadow-2xs">
-                {{ msg.text }}
+              <div class="space-y-2">
+                <div class="bg-[#EBF1F8] text-[#031B39] text-[14px] leading-relaxed p-4 rounded-2xl rounded-tl-none border border-slate-200/60 shadow-2xs">
+                  {{ msg.text }}
+                </div>
+                <!-- Kaynak Doküman Gösterimi -->
+                <div v-if="msg.sources && msg.sources.length" class="flex flex-wrap gap-1.5">
+                  <span 
+                    v-for="(src, sIdx) in msg.sources" 
+                    :key="sIdx"
+                    class="text-[10px] bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded font-mono shadow-2xs"
+                  >
+                    📄 {{ src }}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -167,7 +178,7 @@
           </div>
         </div>
 
-        <!-- Alt Mesaj Yazma Alanı (Input Box) -->
+        <!-- Alt Mesaj Yazma Alanı -->
         <div class="p-4 md:p-6 bg-[#F0F2F5] border-t border-slate-200/80 flex justify-center">
           <form 
             @submit.prevent="sendMessage" 
@@ -181,10 +192,10 @@
             />
             <button 
               type="submit"
-              :disabled="!inputMessage.trim()"
+              :disabled="!inputMessage.trim() || isLoading"
               class="w-8 h-8 bg-[#E30613] hover:bg-[#c40510] disabled:opacity-40 text-white rounded-lg flex items-center justify-center transition shrink-0 cursor-pointer"
             >
-              <svg class="w-4 h-4 transform " fill="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
               </svg>
             </button>
@@ -193,13 +204,12 @@
       </main>
     </div>
 
-    <!-- Departman İçi Paylaşım Modalı (Share Modal) -->
+    <!-- Departman İçi Paylaşım Modalı -->
     <div 
       v-if="showShareModal" 
       class="fixed inset-0 bg-[#031B39]/50 backdrop-blur-xs flex items-center justify-center z-50 p-4"
     >
       <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 relative">
-        <!-- Modal Başlık -->
         <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
           <div>
             <h3 class="font-bold text-[#031B39] text-base">Share Chat with Department</h3>
@@ -208,7 +218,6 @@
           <button @click="showShareModal = false" class="text-slate-400 hover:text-slate-600 text-lg cursor-pointer">✕</button>
         </div>
 
-        <!-- Form -->
         <div class="space-y-4">
           <div>
             <label class="block text-xs font-semibold text-[#031B39] mb-1">Select Colleague Email</label>
@@ -237,7 +246,6 @@
             ></textarea>
           </div>
 
-          <!-- Gönder Butonu -->
           <button 
             @click="sendShareEmail"
             :disabled="!selectedColleagueEmail || isSharing"
@@ -248,9 +256,8 @@
           </button>
         </div>
 
-        <!-- Başarı Mesajı Bildirimi -->
         <div v-if="shareSuccess" class="mt-3 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-lg text-center font-medium">
-          ✓ Chat summary successfully emailed to {{ selectedColleagueEmail }}!
+          ✓ Full chat log successfully emailed to {{ selectedColleagueEmail }}!
         </div>
       </div>
     </div>
@@ -264,7 +271,6 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-// Giriş Yapan Kullanıcı Bilgileri
 const currentUser = ref({
   name: 'Elif Yılmaz',
   firstName: 'Elif',
@@ -273,7 +279,6 @@ const currentUser = ref({
   departmentName: 'Department of Information Technology'
 })
 
-// Departmanlara Özel Karşılama Öneri Soruları
 const departmentPrompts = {
   'it': [
     'How do I search TİKA internal data programs and databases?',
@@ -286,24 +291,6 @@ const departmentPrompts = {
     'How do we coordinate with local embassies and partner agencies?',
     'Where are TİKA\'s coordination offices located globally?',
     'What is the procedure for processing international grant requests?'
-  ],
-  'proje-koordinasyon': [
-    'What documents do I need for a field visit checklist?',
-    'How do I submit my weekly project progress report?',
-    'What are the active infrastructure project templates?',
-    'How is project budget approval processed step by step?'
-  ],
-  'personel-idari': [
-    'How do I submit an annual leave request in the system?',
-    'What is the administrative travel reimbursement rule?',
-    'Where can I find employee onboarding and HR guides?',
-    'What are the health insurance and benefit details?'
-  ],
-  'strateji-gelistirme': [
-    'Where can I download the 2024 Strategic Development Plan?',
-    'How are department KPIs tracked and reported?',
-    'What are the budget allocation guidelines for new offices?',
-    'How do I access quarterly performance metrics?'
   ]
 }
 
@@ -313,7 +300,7 @@ const currentDepartmentPrompts = computed(() => {
 })
 
 const departmentColleagues = ref([
-  { name: 'Ahmet Kaya', email: 'ahmet.kaya@tika.gov.tr', departmentKey: 'it' },
+  { name: 'Safiye Alaca', email: 'safyealaca@gmail.com', departmentKey: 'it' },
   { name: 'Zeynep Demir', email: 'zeynep.demir@tika.gov.tr', departmentKey: 'it' },
   { name: 'Mehmet Öz', email: 'mehmet.oz@tika.gov.tr', departmentKey: 'it' },
   { name: 'Selin Şahin', email: 'selin.sahin@tika.gov.tr', departmentKey: 'it' }
@@ -325,6 +312,7 @@ const selectedColleagueEmail = ref('')
 const shareNote = ref('')
 const isSharing = ref(false)
 const shareSuccess = ref(false)
+const isLoading = ref(false)
 
 const chatHistory = ref([
   {
@@ -335,11 +323,7 @@ const chatHistory = ref([
       { sender: 'user', text: 'Which country has the largest active program?' },
       { sender: 'ai', text: 'That varies by year and budget cycle — I can pull the current program list by country if you tell me which region you\'re reporting on.' }
     ]
-  },
-  { title: 'Weekly progress report format', messages: [] },
-  { title: 'Coordination office locations', messages: [] },
-  { title: 'Field visit document checklist', messages: [] },
-  { title: 'Grant proposal template', messages: [] }
+  }
 ])
 
 const activeChatTitle = ref('')
@@ -347,11 +331,8 @@ const messages = ref([])
 const inputMessage = ref('')
 
 const sendSuggestedPrompt = (promptText) => {
-  activeChatTitle.value = promptText
-  messages.value = [
-    { sender: 'user', text: promptText },
-    { sender: 'ai', text: 'TİKA runs development cooperation programs across many African countries — covering health, education, agriculture, and infrastructure — delivered in coordination with local institutions and Turkish coordination offices in the region.' }
-  ]
+  inputMessage.value = promptText
+  sendMessage()
 }
 
 const selectHistoryChat = (chat) => {
@@ -371,35 +352,96 @@ const startNewChat = () => {
   messages.value = []
 }
 
-const sendMessage = () => {
-  if (!inputMessage.trim()) return
+// 1. CANLI FASTAPI CHAT ENTEGRASYONU (/api/chat)
+const sendMessage = async () => {
+  // inputMessage.value.trim() şeklinde .value eklendi
+  if (!inputMessage.value || !inputMessage.value.trim() || isLoading.value) return
 
-  const userText = inputMessage.value
+  const userText = inputMessage.value.trim()
   messages.value.push({ sender: 'user', text: userText })
   inputMessage.value = ''
+  isLoading.value = true
 
-  setTimeout(() => {
+  try {
+    const response = await fetch('http://127.0.0.1:8000/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: userText,
+        user_email: currentUser.value.email
+      })
+    })
+
+    const data = await response.json()
+    
+    if (data.status === 'success') {
+      messages.value.push({
+        sender: 'ai',
+        text: data.reply,
+        sources: data.sources || []
+      })
+    } else {
+      messages.value.push({
+        sender: 'ai',
+        text: 'Bir yanıt üretilirken hata oluştu.'
+      })
+    }
+  } catch (error) {
+    console.error('Chat API Hatası:', error)
     messages.value.push({
       sender: 'ai',
-      text: 'According to TİKA internal data, procedures, and reporting guidelines, here is the relevant overview for your question.'
+      text: 'FastAPI sunucusuna ulaşılamadı. Lütfen arka plan servisinin açık olduğunu kontrol edin.'
     })
-  }, 600)
+  } finally {
+    isLoading.value = false
+  }
 }
 
-const sendShareEmail = () => {
+// 2. CANLI FASTAPI BİREBİR SOHBET E-POSTA PAYLAŞIM ENTEGRASYONU (/api/share)
+const sendShareEmail = async () => {
   if (!selectedColleagueEmail.value) return
 
   isSharing.value = true
-  setTimeout(() => {
+
+  // Ekrandaki Vue mesajlarını FastAPI'nin beklediği {role, content} yapısına dönüştür
+  const formattedMessages = messages.value.map(msg => ({
+    role: msg.sender === 'user' ? 'user' : 'assistant',
+    content: msg.text
+  }))
+
+  try {
+    const response = await fetch('http://localhost:8000/api/share', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        recipient_email: selectedColleagueEmail.value,
+        messages: formattedMessages,
+        note: shareNote.value,
+        sender_name: currentUser.value.name
+      })
+    })
+
+    const data = await response.json()
+
+    if (data.status === 'success') {
+      shareSuccess.value = true
+      setTimeout(() => {
+        shareSuccess.value = false
+        showShareModal.value = false
+        selectedColleagueEmail.value = ''
+        shareNote.value = ''
+      }, 2000)
+    }
+  } catch (error) {
+    console.error('Paylaşım Hatası:', error)
+    alert('E-posta gönderilirken bir sunucu hatası oluştu.')
+  } finally {
     isSharing.value = false
-    shareSuccess.value = true
-    setTimeout(() => {
-      shareSuccess.value = false
-      showShareModal.value = false
-      selectedColleagueEmail.value = ''
-      shareNote.value = ''
-    }, 2000)
-  }, 1000)
+  }
 }
 
 const logout = () => {
