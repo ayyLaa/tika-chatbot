@@ -10,3 +10,4 @@ db/
 data_scraper/downloaded_pdfs/
 tika_data_processed.json
 tika_data.json
+db/
