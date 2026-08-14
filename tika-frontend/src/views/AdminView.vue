@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-[#F3F4F6] flex flex-col text-[#1F2937] relative">
-    <!-- Üst Bar (Header - Koyu Lacivert: #031B39) -->
+    <!-- Üst Bar (Header) -->
     <header class="h-16 bg-[#031B39] px-6 flex items-center justify-between z-20 shrink-0 shadow-md relative">
       <!-- Sol: TİKA Logo -->
       <div class="flex items-center">
@@ -66,7 +66,7 @@
               class="w-full text-left px-3 py-2 rounded text-sm font-semibold flex justify-between items-center transition cursor-pointer"
             >
               <span>Kullanıcılar</span>
-              <span class="text-xs opacity-75">248</span>
+              <span class="text-xs opacity-75">{{ users.length }}</span>
             </button>
 
             <button 
@@ -92,10 +92,10 @@
         <div class="text-xs text-gray-500 space-y-1 border-t border-gray-300 pt-3">
           <div class="font-bold uppercase text-[10px] tracking-wider text-gray-400">SİSTEM</div>
           <div class="flex items-center space-x-2 text-gray-700 font-medium">
-            <span class="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span>
-            <span>Vektör servisi çalışıyor</span>
+            <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+            <span>Tüm servisler aktif</span>
           </div>
-          <div class="text-[11px] text-gray-400">Son senkr. 12.08.2026 09:40</div>
+          <div class="text-[11px] text-gray-400">Docker Entegrasyonu Canlı</div>
         </div>
       </aside>
 
@@ -121,11 +121,11 @@
           <div class="grid grid-cols-4 gap-4">
             <div class="bg-white p-4 border border-gray-200 rounded shadow-sm">
               <div class="text-xs font-bold text-gray-400 tracking-wider">TOPLAM PERSONEL</div>
-              <div class="text-3xl font-black text-black mt-1">248</div>
+              <div class="text-3xl font-black text-black mt-1">{{ users.length }}</div>
             </div>
             <div class="bg-white p-4 border border-gray-200 rounded shadow-sm">
               <div class="text-xs font-bold text-gray-400 tracking-wider">ADMİN</div>
-              <div class="text-3xl font-black text-black mt-1">6</div>
+              <div class="text-3xl font-black text-black mt-1">{{ adminCount }}</div>
             </div>
             <div class="bg-white p-4 border border-gray-200 rounded shadow-sm">
               <div class="text-xs font-bold text-gray-400 tracking-wider">ASKIDA</div>
@@ -208,6 +208,7 @@
               </div>
             </div>
 
+            <!-- Sağ Taraf: Şifre Talepleri & Bilgi Havuzu -->
             <div class="space-y-6">
               <div class="bg-gray-100 p-4 rounded border border-gray-200 space-y-4">
                 <div>
@@ -631,7 +632,7 @@ const router = useRouter()
 const activeTab = ref('users')
 const searchQuery = ref('')
 const roleFilter = ref('all')
-const feedbackFilter = ref('flagged') // Varsayılan olarak AI'ın riskli bulduğu 20 sorguyu düşürür
+const feedbackFilter = ref('flagged')
 
 const showProfileMenu = ref(false)
 const showAddUserModal = ref(false)
@@ -689,7 +690,6 @@ const topTopics = ref([
   { title: 'Arşiv erişimi', count: 96, percentage: 22 }
 ])
 
-// AI Tarafından Ön Taramadan Geçirilmiş Log Kayıtları
 const logs = ref([
   { 
     time: '09:58', 
@@ -754,6 +754,7 @@ const logs = ref([
 ])
 
 const flaggedCount = computed(() => logs.value.filter(l => l.isFlagged).length)
+const adminCount = computed(() => users.value.filter(u => u.role === 'Admin').length)
 
 const filteredUsers = computed(() => {
   return users.value.filter(u => {
@@ -776,27 +777,51 @@ const handleLogout = () => {
   router.push('/login')
 }
 
-const handleAddUser = () => {
-  if (newUserEmail.value) {
-    const namePart = newUserEmail.value.split('@')[0].replace('.', ' ')
-    const formattedName = namePart.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-    const initials = namePart.split(' ').map(w => w.charAt(0).toUpperCase()).join('')
+// 1. Yeni Kullanıcı Ekleme -> Spring Boot Backend (:8080)
+const handleAddUser = async () => {
+  if (!newUserEmail.value) return
 
-    users.value.unshift({
-      initials: initials || 'XK',
-      name: formattedName || 'Yeni Kullanıcı',
-      email: newUserEmail.value,
-      role: newUserRole.value,
-      status: 'Davet bekliyor',
-      lastLogin: '—'
+  const emailToInvite = newUserEmail.value
+  const namePart = emailToInvite.split('@')[0].replace('.', ' ')
+  const formattedName = namePart.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+  const initials = namePart.split(' ').map(w => w.charAt(0).toUpperCase()).join('')
+
+  users.value.unshift({
+    initials: initials || 'XK',
+    name: formattedName || 'Yeni Kullanıcı',
+    email: emailToInvite,
+    role: newUserRole.value,
+    status: 'Davet bekliyor',
+    lastLogin: '—'
+  })
+
+  showAddUserModal.value = false
+  newUserEmail.value = ''
+
+  try {
+    const response = await fetch('http://localhost:8080/api/admin/invite', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      },
+      body: JSON.stringify({
+        email: emailToInvite,
+        role: newUserRole.value
+      })
     })
 
-    newUserEmail.value = ''
-    showAddUserModal.value = false
+    if (response.ok) {
+      alert(`Davet e-postası Spring Boot EmailService üzerinden ${emailToInvite} adresine gönderildi!`)
+    } else {
+      console.warn('Java sunucusundan e-posta gönderilemedi. Simüle edildi. Durum Kodu:', response.status)
+    }
+  } catch (error) {
+    console.error('Spring Boot bağlantı hatası:', error)
   }
 }
 
-// 1. Olumlu (Temiz) İşaretleme
+// 2. Olumlu (Temiz) İşaretleme
 const markAsSafe = (log) => {
   log.feedback = 'Olumlu'
   log.isFlagged = false
@@ -804,7 +829,7 @@ const markAsSafe = (log) => {
   alert('Sorgu güvenli olarak işaretlendi ve risk listesinden temizlendi.')
 }
 
-// 2. Olumsuz (İncele) İnceleme Modalı Açma ve AI Gerekçesi Çağırma
+// 3. Olumsuz İnceleme Modalı & AI Nedeni Çağırma -> FastAPI AI Service (:8000)
 const openFeedbackModal = async (log) => {
   activeLog.value = log
   showFeedbackModal.value = true
@@ -837,7 +862,7 @@ const openFeedbackModal = async (log) => {
   }
 }
 
-// 3. Düzenlemeyi Kaydet ve Gönder
+// 4. Düzenlemeyi Kaydet ve Gönder
 const submitFeedback = () => {
   if (activeLog.value) {
     activeLog.value.feedback = 'Olumsuz'

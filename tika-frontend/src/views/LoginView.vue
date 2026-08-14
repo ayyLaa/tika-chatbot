@@ -81,7 +81,7 @@
             <label class="text-[12px] font-semibold text-tika-dark">Email</label>
             <input 
               v-model="form.email"
-              type="email" 
+              type="text" 
               placeholder="e.g. name@tika.gov.tr"
               required
               class="w-full px-3.5 py-2 bg-tika-bubbleBot border border-transparent rounded-lg text-body-chat focus:outline-none focus:border-tika-red focus:bg-white transition"
@@ -175,7 +175,7 @@ const form = reactive({
 })
 
 onMounted(() => {
-  // Davet linki kontrolü (URL'de token veya register path'i varsa Sign Up aktif olur)
+  // Davet linki URL'den okunuyor (Örn: /login?token=abc123xyz)
   if (route.query.token || route.query.invite || route.path.includes('register')) {
     hasInviteToken.value = true
     isLogin.value = false
@@ -185,17 +185,71 @@ onMounted(() => {
   }
 })
 
-const handleAuth = () => {
+const handleAuth = async () => {
   if (isLogin.value) {
-    // Admin yetkisi kontrolü
-    if (form.email.includes('admin') || form.email.includes('elif')) {
-      router.push('/admin')
-    } else {
-      router.push('/')
+    // -------------------------
+    // 1. GİRİŞ YAPMA (LOGIN) UCU
+    // -------------------------
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        
+        // Java'dan gelen Token ve Rol bilgilerini tarayıcıya kaydet
+        localStorage.setItem('token', data.token)
+        localStorage.setItem('role', data.role) // 'Admin' veya 'User' dönecek
+        localStorage.setItem('userEmail', form.email)
+
+        // Rolüne göre sayfaya yönlendir
+        const role = data.role ? data.role.toLowerCase() : ''
+          if (role === 'admin') {
+        router.push('/admin')
+        } else {
+          router.push('/chat')
+        }
+      } else {
+        alert('Giriş başarısız. Lütfen e-posta ve şifrenizi kontrol edin.')
+      }
+    } catch (error) {
+      console.error('Login Hatası:', error)
+      alert('Sunucuya bağlanılamadı. Docker servislerinin açık olduğundan emin olun.')
     }
   } else {
-    alert('Hesabınız başarıyla oluşturuldu! Şimdi giriş yapabilirsiniz.')
-    isLogin.value = true
+    // -------------------------
+    // 2. DAVET KABUL ETME (SIGN UP) UCU
+    // -------------------------
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/accept-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: route.query.token || '', // URL'den alınan davet şifresi
+          fullName: form.name,
+          password: form.password,
+          phoneNumber: form.phone,
+          department: form.department
+        })
+      })
+
+      if (response.ok) {
+        alert('Hesabınız başarıyla oluşturuldu! Şimdi giriş yapabilirsiniz.')
+        isLogin.value = true // Formu Login'e çevir
+        form.password = '' // Güvenlik için şifre alanını temizle
+      } else {
+        alert('Kayıt başarısız. Davet linkinizin süresi dolmuş veya geçersiz olabilir.')
+      }
+    } catch (error) {
+      console.error('Kayıt Hatası:', error)
+      alert('Sunucuya bağlanılamadı. Docker servislerinin açık olduğundan emin olun.')
+    }
   }
 }
 </script>

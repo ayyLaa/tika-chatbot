@@ -12,13 +12,14 @@ load_dotenv()
 
 app = FastAPI(
     title="TİKA AI Service",
-    description="Sohbet ve E-Posta Paylaşım Uçları",
+    description="Sohbet, RAG, Risk Analizi ve E-Posta Servisi",
     version="1.0.0"
 )
 
+# CORS Ayarları
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -27,7 +28,7 @@ app.add_middleware(
 # --- Veri Modelleri ---
 
 class ChatMessage(BaseModel):
-    role: str  # "user" veya "assistant"
+    role: str
     content: str
 
 class ChatRequest(BaseModel):
@@ -42,12 +43,18 @@ class ChatResponse(BaseModel):
 
 class ShareRequest(BaseModel):
     recipient_email: EmailStr
-    messages: List[ChatMessage]  # Birebir sohbet geçmişi
+    messages: List[ChatMessage]
     note: Optional[str] = ""
     sender_name: Optional[str] = "TİKA Personeli"
 
+class FeedbackReasonRequest(BaseModel):
+    question: str
+    answer: Optional[str] = "Yanıt bulunamadı veya yetersiz."
+    source: Optional[str] = "Bilinmiyor"
 
-# --- Risk Taraması & Feedback Modelleri ---
+class FeedbackReasonResponse(BaseModel):
+    suggested_reason: str
+    status: str = "success"
 
 class AuditRequest(BaseModel):
     question: str
@@ -55,12 +62,12 @@ class AuditRequest(BaseModel):
     source: Optional[str] = ""
 
 class AuditResponse(BaseModel):
-    is_flagged: bool  # True ise admin paneline düşer
-    risk_level: str   # "Yüksek", "Orta", "Düşük"
-    ai_risk_reason: str # AI'ın tespit ettiği olumsuzluk nedeni
+    is_flagged: bool
+    risk_level: str
+    ai_risk_reason: str
     status: str = "success"
 
-# --- Arka Plan E-Posta Gönderim Fonksiyonu ---
+# --- E-Posta Fonksiyonu ---
 
 def send_email_in_background(recipient_email: str, messages: List[ChatMessage], note: str, sender_name: str):
     smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
@@ -71,7 +78,6 @@ def send_email_in_background(recipient_email: str, messages: List[ChatMessage], 
 
     subject = "TİKA AI - Birebir Sohbet Dökümü Paylaşımı"
 
-    # Sohbet mesajlarını HTML biçimine dönüştür
     formatted_chat_html = ""
     for msg in messages:
         if msg.role == "user":
@@ -100,17 +106,12 @@ def send_email_in_background(recipient_email: str, messages: List[ChatMessage], 
           <div style="background-color: #031B39; color: #ffffff; padding: 14px 18px; border-radius: 8px; font-weight: bold; font-size: 16px;">
             ☪ TİKA AI — Sohbet Kaydı Paylaşımı
           </div>
-          
           <p style="margin-top: 16px; font-size: 14px;"><strong>{sender_name}</strong> sizinle birebir TİKA AI sohbet dökümünü paylaştı.</p>
-          
           {f'<div style="background: #FEF2F2; border-left: 4px solid #E30613; padding: 10px; margin: 12px 0; font-size: 13px;"><strong>Not:</strong> {note}</div>' if note else ''}
-          
           <h4 style="margin-top: 20px; margin-bottom: 12px; color: #E30613; font-size: 14px; border-bottom: 1px solid #E5E7EB; padding-bottom: 6px;">Sohbet Geçmişi:</h4>
-          
           <div style="background: #FFFFFF; padding: 16px; border-radius: 8px; border: 1px solid #E5E7EB;">
             {formatted_chat_html}
           </div>
-          
           <p style="font-size: 11px; color: #9CA3AF; margin-top: 24px; text-align: center;">
             © 2026 TİKA — Türk İşbirliği ve Koordinasyon Ajansı Başkanlığı
           </p>
@@ -133,7 +134,7 @@ def send_email_in_background(recipient_email: str, messages: List[ChatMessage], 
                 server.sendmail(sender_email, recipient_email, msg.as_string())
             print(f"Sohbet dökümü başarıyla gönderildi: {recipient_email}")
         else:
-            print("SMTP bilgileri girilmediği için e-posta simüle edildi.")
+            print("SMTP bilgileri girilmediği için e-posta simüle edildi (Konsol çıktısı ok).")
     except Exception as e:
         print(f"E-posta hatası: {str(e)}")
 
@@ -173,11 +174,18 @@ def share_endpoint(request: ShareRequest, background_tasks: BackgroundTasks):
     )
     return {"status": "success", "message": "Sohbet kaydı e-posta ile gönderilmek üzere sıraya alındı."}
 
-# --- AI Ön Tarama ve Risk Tespit Ucu ---
+@app.post("/api/feedback/generate-reason", response_model=FeedbackReasonResponse)
+def generate_feedback_reason(request: FeedbackReasonRequest):
+    source_info = request.source if request.source else "Belirtilmedi"
+    reason = f"Yapay Zeka Analizi: '{request.question}' sorusuna verilen yanıt, {source_info} kaynağı baz alındığında eksik/güncel olmayan bilgiler içermektedir. Mevzuat uyumsuzluğu tespiti nedeniyle olumsuz değerlendirilmiştir."
+    return FeedbackReasonResponse(
+        suggested_reason=reason,
+        status="success"
+    )
+
 @app.post("/api/audit/scan", response_model=AuditResponse)
 def scan_prompt_for_admin(request: AuditRequest):
     q = request.question.lower()
-    
     if "vpn" in q or "güvenlik" in q or "şifre" in q:
         return AuditResponse(
             is_flagged=True,

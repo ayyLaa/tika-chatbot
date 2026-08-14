@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import org.springframework.mail.MailException;
 
 @Service
 public class EmailService {
@@ -13,7 +14,7 @@ public class EmailService {
     @Value("${app.base-url}")
     private String baseUrl;
 
-    @Value("${spring.mail.username}")
+    @Value("${mail.username}")
     private String fromAddress;
 
     public EmailService(JavaMailSender mailSender) {
@@ -35,7 +36,14 @@ public class EmailService {
                         "Bağlantının geçerlilik süresi 7 gündür.\n\n" +
                         "Bu daveti siz talep etmediyseniz, lütfen sistem yöneticinizle iletişime geçiniz."
         );
-        mailSender.send(message);
+        try{
+                mailSender.send(message);
+        } catch (MailException e) {
+        
+        System.err.println("Greška pri slanju pozivnice na " + toEmail + ": " + e.getMessage());
+       
+    }
+        
     }
     public void sendPasswordResetEmail(String toEmail, String resetToken) {
         String resetLink = baseUrl + "/auth/reset-password?token=" + resetToken;

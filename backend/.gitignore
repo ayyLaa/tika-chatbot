@@ -1,3 +1,12 @@
-target/
-.idea/
-*.iml
+# Hassas çevre dosyaları
+.env
+
+# Veritabanı ve veri klasörleri
+db/
+*.db
+*.sqlite
+
+# Python veri kazıma ve işleme çıktıları
+data_scraper/downloaded_pdfs/
+tika_data_processed.json
+tika_data.json

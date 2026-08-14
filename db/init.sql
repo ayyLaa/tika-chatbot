@@ -14,7 +14,7 @@ CREATE TABLE users (
     is_active           BOOLEAN NOT NULL DEFAULT TRUE,
     created_at          TIMESTAMP NOT NULL DEFAULT now(),
     email_verified      BOOLEAN NOT NULL DEFAULT FALSE,
-    updated_at TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMP NOT NULL DEFAULT now(),
     CONSTRAINT check_user_role CHECK (user_role IN ('admin', 'user'))
 );
 
@@ -150,3 +150,16 @@ CREATE INDEX idx_user_invites_email ON user_invites(email);
 CREATE INDEX idx_user_invites_token ON user_invites(invite_token);
 CREATE INDEX idx_password_reset_user_id ON password_reset_requests(user_id);
 CREATE INDEX idx_password_reset_status ON password_reset_requests(status);
+
+-- DEFAULT ADMIN ACCOUNT (Password: admin123)
+INSERT INTO users (full_name, username, email, password_hash, department, user_role, is_active, email_verified)
+VALUES (
+    'Sistem Yoneticisi', 
+    'admin', 
+    'admin@tika.gov.tr', 
+    '$2a$10$slYQmyNdGzTn7ZLBXBChFOC9f6kFjAqPhccnP6DxlWXx2lPk1C3G6', 
+    'IT', 
+    'admin', 
+    true, 
+    true
+);
