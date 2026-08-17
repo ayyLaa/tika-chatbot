@@ -21,7 +21,7 @@ jwt:
   expiration-ms: 86400000
 
 app:
-  base-url: http://localhost:8080
+  base-url: http://localhost:5173
 
 ai:
   service:
@@ -31,3 +31,7 @@ ai:
 server:
   servlet:
     context-path: /api
+
+mail:
+  username: test@test.com
+  password: testpassword

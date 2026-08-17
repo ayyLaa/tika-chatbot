@@ -68,7 +68,7 @@ public class AdminService {
         String token = UUID.randomUUID().toString();
         UserInvite invite = new UserInvite();
         invite.setEmail(email);
-        invite.setInvitedRole(role);
+        invite.setInvitedRole(role.toLowerCase());
         invite.setInviteToken(token);
         invite.setInvitedBy(adminId);
         invite.setExpiresAt(LocalDateTime.now().plusDays(7));

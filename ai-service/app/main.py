@@ -8,6 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 from dotenv import load_dotenv
 
+# RAG i AI importi
+from app.retrieval.vector_search import search_similar_chunks
+from app.generation.gemini_client import generate_answer
+from app.generation.prompt_templates import build_prompt
+from app.db.connection import get_connection
 load_dotenv()
 
 app = FastAPI(
@@ -154,12 +159,38 @@ def chat_endpoint(request: ChatRequest):
     if not user_msg:
         raise HTTPException(status_code=400, detail="Mesaj boş olamaz.")
 
-    mock_response = f"Sorunuz alındı: '{user_msg}'. TİKA iç mevzuatı incelendi."
-    mock_sources = ["Personel Yönetmeliği 2026.pdf (Sayfa 12)"]
+    # 1. Pretraži vektor bazu za sličnim tekstovima (Top 5 rezultata)
+    search_results = search_similar_chunks(user_msg, top_k=5)
 
+    # 2. Sastavi kontekst (dokumente) i listu izvora
+    sources = set() # Koristimo 'set' da se isti izvor ne bi ponavljao više puta
+    context_chunks = []
+
+    # Prema vector_search.py skripti, rezultati su u formatu: (id, chunk_text, document_id, source_page, similarity)
+    for res in search_results:
+        chunk_text = res[1]
+        source_page = res[3]
+
+        context_chunks.append(f"Kaynak: {source_page}\nMetin: {chunk_text}")
+
+        if source_page:
+            sources.add(source_page)
+        else:
+            sources.add("TİKA Veritabanı")
+
+    # 3. Sastavi Prompt (Uputu) za Gemini
+    prompt = build_prompt(user_msg, context_chunks)
+
+    # 4. Pošalji prompt Geminiju ve sačekaj odgovor
+    try:
+        ai_reply = generate_answer(prompt)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Yapay zeka yanıt oluşturamadı: {str(e)}")
+
+    # 5. Vrati pravi odgovor i prave izvore na frontend
     return ChatResponse(
-        reply=mock_response,
-        sources=mock_sources,
+        reply=ai_reply,
+        sources=list(sources),
         status="success"
     )
 
@@ -204,3 +235,85 @@ def scan_prompt_for_admin(request: AuditRequest):
             risk_level="Düşük",
             ai_risk_reason="Güvenli ve mevzuata uygun etkileşim."
         )
+
+@app.get("/api/documents")
+def get_documents_list():
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        # SQL upit koji spaja dokumente i broji koliko 'chunk-ova' svaki ima
+        cur.execute("""
+            SELECT d.file_name, d.doc_type, d.doc_status, COUNT(c.id) as chunk_count
+            FROM documents d
+            LEFT JOIN chunks c ON d.id = c.document_id
+            GROUP BY d.id, d.file_name, d.doc_type, d.doc_status
+            ORDER BY d.file_name ASC
+        """)
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        docs = []
+        for r in rows:
+            docs.append({
+                "name": r[0],
+                "pool": "Web Sayfası" if r[1] == "web" else "PDF Rapor",
+                "status": "INDEXED", # Pretpostavljamo da su svi uspješno prebačeni
+                "chunk": r[3],
+                "lastSync": "Bugün"
+            })
+        return {"status": "success", "data": docs}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+@app.get("/api/analytics")
+def get_analytics():
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Pokušavamo izvući stvarne poruke iz Java tabele 'message'
+        cur.execute("""
+            SELECT question, answer
+            FROM message
+            ORDER BY id DESC LIMIT 50
+        """)
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        logs_data = []
+        for r in rows:
+            q_text = r[0]
+            logs_data.append({
+                "time": "Yakın Zaman",
+                "user": "TİKA Personeli",
+                "question": q_text[:80] + "..." if len(q_text) > 80 else q_text,
+                "source": "Vektör Veritabanı",
+                "duration": "1,5s",
+                "feedback": "Belirsiz",
+                "isFlagged": False,
+                "riskLevel": "Düşük",
+                "aiRiskReason": "",
+                "reason": ""
+            })
+
+        return {
+            "status": "success",
+            "stats": {
+                "monthly_tokens": "125K",
+                "avg_response": "1,5s",
+                "active_users": 12,
+                "satisfaction": "%96"
+            },
+            "logs": logs_data
+        }
+    except Exception as e:
+        # Ako tabela 'message' još ne postoji ili je prazna, vraćamo nule
+        return {
+            "status": "error",
+            "message": str(e),
+            "stats": {
+                "monthly_tokens": "0", "avg_response": "0s", "active_users": 0, "satisfaction": "%0"
+            },
+            "logs": []
+        }

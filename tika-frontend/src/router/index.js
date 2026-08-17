@@ -10,9 +10,14 @@ const routes = [
     component: LoginView
   },
   {
-    path: '/',
+    path: '/chat',
     name: 'chat',
     component: ChatView
+  },
+  {
+    path: '/accept-invite',
+    name: 'AcceptInvite',
+    component: LoginView
   },
   {
     path: '/admin',

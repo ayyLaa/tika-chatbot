@@ -11,6 +11,7 @@ import com.tika.chatbot.auth.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.tika.chatbot.auth.dto.InviteDetailsResponse;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

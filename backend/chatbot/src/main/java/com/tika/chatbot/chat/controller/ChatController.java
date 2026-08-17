@@ -3,11 +3,14 @@ package com.tika.chatbot.chat.controller;
 import com.tika.chatbot.auth.config.CustomUserDetails;
 import com.tika.chatbot.chat.dto.ChatRequest;
 import com.tika.chatbot.chat.dto.ChatResponse;
+import com.tika.chatbot.chat.dto.ChatSessionDTO;
 import com.tika.chatbot.chat.service.ChatService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/chat")
@@ -22,7 +25,12 @@ public class ChatController {
     @PostMapping("/ask")
     public ResponseEntity<ChatResponse> ask(@Valid @RequestBody ChatRequest request,
                                             @AuthenticationPrincipal CustomUserDetails user) {
-        ChatResponse response = chatService.askQuestion(user.getId(), request.sessionId(), request.question());
+        ChatResponse response = chatService.askQuestion(user.getId(), user.getEmail(), request.sessionId(), request.question());
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<List<ChatSessionDTO>> getHistory(@AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok(chatService.getUserChatHistory(user.getId()));
     }
 }

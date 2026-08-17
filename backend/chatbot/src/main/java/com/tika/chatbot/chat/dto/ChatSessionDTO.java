@@ -3,8 +3,8 @@ package com.tika.chatbot.chat.dto;
 import java.util.List;
 import java.util.UUID;
 
-public record ChatResponse(
+public record ChatSessionDTO(
         UUID sessionId,
-        String answer,
-        List<String> sources
+        String title,
+        List<MessageDTO> messages
 ) {}

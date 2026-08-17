@@ -7,10 +7,10 @@
 
       <!-- Slogan Alanı -->
       <div class="my-auto max-w-lg z-10 space-y-0 mt-26">
-        <img 
-          src="../assets/slogan.png" 
-          alt="From the Heart of Turkish People" 
-          class="w-full max-w-[400px] h-auto object-contain select-none"
+        <img
+            src="../assets/slogan.png"
+            alt="From the Heart of Turkish People"
+            class="w-full max-w-[400px] h-auto object-contain select-none"
         />
 
         <!-- Açıklama Metni -->
@@ -29,21 +29,21 @@
     <div class="w-full lg:w-3/5 flex items-center justify-center p-6 sm:p-10 h-full overflow-y-auto lg:overflow-y-hidden">
       <!-- Tam ekrana orantılı geniş kart -->
       <div class="w-full max-w-3xl bg-white p-8 sm:p-10 rounded-2xl shadow-xs border border-slate-100">
-        
+
         <!-- Sekme Geçişi (Sadece Davet Token'ı Varsa Sign Up Görünür) -->
         <div v-if="hasInviteToken" class="flex gap-2 p-1 bg-tika-bubbleBot rounded-lg mb-6">
-          <button 
-            @click="isLogin = true"
-            :class="[
+          <button
+              @click="isLogin = true"
+              :class="[
               'flex-1 py-2 text-[14px] font-semibold rounded-md transition-all duration-200 cursor-pointer',
               isLogin ? 'bg-tika-red text-white shadow-xs' : 'text-tika-textMuted hover:text-tika-dark'
             ]"
           >
             Login
           </button>
-          <button 
-            @click="isLogin = false"
-            :class="[
+          <button
+              @click="isLogin = false"
+              :class="[
               'flex-1 py-2 text-[14px] font-semibold rounded-md transition-all duration-200 cursor-pointer',
               !isLogin ? 'bg-tika-red text-white shadow-xs' : 'text-tika-textMuted hover:text-tika-dark'
             ]"
@@ -67,46 +67,46 @@
           <!-- Full Name (Sadece Sign Up) -->
           <div v-if="!isLogin" class="space-y-1">
             <label class="text-[12px] font-semibold text-tika-dark">Full Name</label>
-            <input 
-              v-model="form.name"
-              type="text" 
-              placeholder="E.g. Elif Yılmaz"
-              required
-              class="w-full px-3.5 py-2 bg-tika-bubbleBot border border-transparent rounded-lg text-body-chat focus:outline-none focus:border-tika-red focus:bg-white transition"
+            <input
+                v-model="form.name"
+                type="text"
+                placeholder="E.g. Elif Yılmaz"
+                required
+                class="w-full px-3.5 py-2 bg-tika-bubbleBot border border-transparent rounded-lg text-body-chat focus:outline-none focus:border-tika-red focus:bg-white transition"
             />
           </div>
 
           <!-- Email -->
           <div class="space-y-1">
             <label class="text-[12px] font-semibold text-tika-dark">Email</label>
-            <input 
-              v-model="form.email"
-              type="text" 
-              placeholder="e.g. name@tika.gov.tr"
-              required
-              class="w-full px-3.5 py-2 bg-tika-bubbleBot border border-transparent rounded-lg text-body-chat focus:outline-none focus:border-tika-red focus:bg-white transition"
+            <input
+                v-model="form.email"
+                type="text"
+                placeholder="e.g. name@tika.gov.tr"
+                required
+                class="w-full px-3.5 py-2 bg-tika-bubbleBot border border-transparent rounded-lg text-body-chat focus:outline-none focus:border-tika-red focus:bg-white transition"
             />
           </div>
 
           <!-- Password -->
           <div class="space-y-1">
             <label class="text-[12px] font-semibold text-tika-dark">Password</label>
-            <input 
-              v-model="form.password"
-              type="password" 
-              placeholder="••••••••"
-              required
-              class="w-full px-3.5 py-2 bg-tika-bubbleBot border border-transparent rounded-lg text-body-chat focus:outline-none focus:border-tika-red focus:bg-white transition"
+            <input
+                v-model="form.password"
+                type="password"
+                placeholder="••••••••"
+                required
+                class="w-full px-3.5 py-2 bg-tika-bubbleBot border border-transparent rounded-lg text-body-chat focus:outline-none focus:border-tika-red focus:bg-white transition"
             />
           </div>
 
           <!-- Department (Açılır Seçenekler - Sadece Sign Up) -->
           <div v-if="!isLogin" class="space-y-1">
             <label class="text-[12px] font-semibold text-tika-dark">Department</label>
-            <select 
-              v-model="form.department"
-              required
-              class="w-full px-3.5 py-2 bg-tika-bubbleBot border border-transparent rounded-lg text-body-chat focus:outline-none focus:border-tika-red focus:bg-white transition cursor-pointer text-tika-dark"
+            <select
+                v-model="form.department"
+                required
+                class="w-full px-3.5 py-2 bg-tika-bubbleBot border border-transparent rounded-lg text-body-chat focus:outline-none focus:border-tika-red focus:bg-white transition cursor-pointer text-tika-dark"
             >
               <option value="" disabled selected>Select Your Department</option>
               <option value="external-relations">Department of External Relations and Partnerships</option>
@@ -121,19 +121,19 @@
           <!-- Phone Number (Sadece Sign Up) -->
           <div v-if="!isLogin" class="space-y-1">
             <label class="text-[12px] font-semibold text-tika-dark">Phone Number</label>
-            <input 
-              v-model="form.phone"
-              type="tel" 
-              placeholder="+90 5XX XXX XX XX"
-              required
-              class="w-full px-3.5 py-2 bg-tika-bubbleBot border border-transparent rounded-lg text-body-chat focus:outline-none focus:border-tika-red focus:bg-white transition"
+            <input
+                v-model="form.phone"
+                type="tel"
+                placeholder="+90 5XX XXX XX XX"
+                required
+                class="w-full px-3.5 py-2 bg-tika-bubbleBot border border-transparent rounded-lg text-body-chat focus:outline-none focus:border-tika-red focus:bg-white transition"
             />
           </div>
 
           <!-- Submit Butonu -->
-          <button 
-            type="submit"
-            class="w-full mt-3 py-2.5 bg-tika-red hover:bg-tika-redHover text-white text-[14px] font-semibold rounded-lg shadow-xs transition-colors duration-200 cursor-pointer"
+          <button
+              type="submit"
+              class="w-full mt-3 py-2.5 bg-tika-red hover:bg-tika-redHover text-white text-[14px] font-semibold rounded-lg shadow-xs transition-colors duration-200 cursor-pointer"
           >
             {{ isLogin ? 'LOG IN →' : 'Create Account →' }}
           </button>
@@ -142,9 +142,9 @@
         <!-- Sadece Davet Token'ı Varsa Alt Geçiş Butonu Görünür -->
         <p v-if="hasInviteToken" class="mt-6 text-center text-footer-muted text-xs">
           {{ isLogin ? "Don't have an account?" : "Already have an account?" }}
-          <button 
-            @click="isLogin = !isLogin" 
-            class="text-tika-red font-semibold hover:underline ml-1 cursor-pointer"
+          <button
+              @click="isLogin = !isLogin"
+              class="text-tika-red font-semibold hover:underline ml-1 cursor-pointer"
           >
             {{ isLogin ? 'Sign Up' : 'Log In' }}
           </button>
@@ -202,7 +202,7 @@ const handleAuth = async () => {
 
       if (response.ok) {
         const data = await response.json()
-        
+
         // Java'dan gelen Token ve Rol bilgilerini tarayıcıya kaydet
         localStorage.setItem('token', data.token)
         localStorage.setItem('role', data.role) // 'Admin' veya 'User' dönecek
@@ -210,8 +210,8 @@ const handleAuth = async () => {
 
         // Rolüne göre sayfaya yönlendir
         const role = data.role ? data.role.toLowerCase() : ''
-          if (role === 'admin') {
-        router.push('/admin')
+        if (role === 'admin') {
+          router.push('/admin')
         } else {
           router.push('/chat')
         }

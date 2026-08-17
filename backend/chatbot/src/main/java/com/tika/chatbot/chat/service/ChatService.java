@@ -8,12 +8,13 @@ import com.tika.chatbot.chat.repository.MessageRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class ChatService {
@@ -35,7 +36,7 @@ public class ChatService {
         this.messageRepository = messageRepository;
     }
 
-    public ChatResponse askQuestion(UUID userId, UUID sessionId, String question) {
+    public ChatResponse askQuestion(UUID userId, String userEmail, UUID sessionId, String question) {
         UUID actualSessionId = sessionId;
         if (actualSessionId == null) {
             ChatSession session = new ChatSession();
@@ -45,35 +46,57 @@ public class ChatService {
         }
 
         List<Message> history = messageRepository.findBySessionIdOrderByCreatedAtAsc(actualSessionId);
-        List<ConversationTurnDto> historyDto = history.stream()
-                .map(m -> new ConversationTurnDto(m.getQuestion(), m.getAnswer()))
-                .collect(Collectors.toList());
+        List<PythonChatMessage> historyDto = new ArrayList<>();
+        for (Message m : history) {
+            historyDto.add(new PythonChatMessage("user", m.getQuestion()));
+            historyDto.add(new PythonChatMessage("assistant", m.getAnswer()));
+        }
 
-        PythonQueryRequest pyRequest = new PythonQueryRequest(
-                actualSessionId.toString(), question, 5, historyDto
-        );
-
+        PythonQueryRequest pyRequest = new PythonQueryRequest(question, userEmail, historyDto);
 
         HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("X-Internal-Key", internalApiKey);
         HttpEntity<PythonQueryRequest> requestEntity = new HttpEntity<>(pyRequest, headers);
 
         PythonQueryResponse response = restTemplate.postForObject(
-                aiServiceUrl + "/query", requestEntity, PythonQueryResponse.class
+                aiServiceUrl + "/api/chat", requestEntity, PythonQueryResponse.class
         );
 
         Message message = new Message();
         message.setSessionId(actualSessionId);
         message.setQuestion(question);
-        message.setAnswer(response.answer());
-        message.setResponseTimeMs(response.responseTimeMs());
-        message.setTokensUsed(response.tokensUsed());
+        message.setAnswer(response.reply());
         messageRepository.save(message);
 
-        List<SourceDto> sources = response.sources().stream()
-                .map(s -> new SourceDto(s.document(), s.page(), s.chunkId()))
-                .collect(Collectors.toList());
+        List<String> sources = response.sources() != null ? response.sources() : List.of();
 
-        return new ChatResponse(response.answer(), sources, response.responseTimeMs(), response.tokensUsed());
+        return new ChatResponse(actualSessionId, response.reply(), sources);
+    }
+
+    public List<ChatSessionDTO> getUserChatHistory(UUID userId) {
+        // 1. Povuci SVE sesije i SVE njihove poruke u SAMO JEDNOM upitu bazi!
+        List<ChatSession> sessions = sessionRepository.findByUserIdWithMessages(userId);
+
+        // 2. Pretvori (mapiraj) bazu podataka u DTO objekte za frontend
+        return sessions.stream().map(session -> {
+
+            // Pošto smo koristili JOIN FETCH, session.getMessages() ne pravi novi upit u bazu,
+            // već koristi podatke koje je već povukao.
+            List<MessageDTO> messageDTOs = session.getMessages().stream()
+                    .map(m -> new MessageDTO(
+                            m.getQuestion(),
+                            m.getAnswer(),
+                            m.getCreatedAt()
+                    ))
+                    .toList();
+
+            return new ChatSessionDTO(
+                    session.getId(),
+                    session.getTitle(),
+                    messageDTOs
+            );
+
+        }).toList();
     }
 }
