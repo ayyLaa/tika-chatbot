@@ -44,7 +44,7 @@
         <div class="text-[11px] font-bold text-[#031B39]/50 uppercase tracking-wider mb-3 px-1">HISTORY</div>
 
         <div class="flex-1 overflow-y-auto space-y-1">
-          <button v-for="(chat, index) in chatHistory" :key="index" @click="selectHistoryChat(chat)" :class="['w-full text-left text-[13px] px-3 py-2.5 rounded-lg truncate transition cursor-pointer', activeChatTitle === chat.title ? 'bg-white text-[#E30613] font-semibold border-l-4 border-[#E30613] shadow-2xs' : 'text-[#031B39] hover:bg-white/60']">
+          <button v-for="chat in chatHistory" :key="chat.sessionId" @click="selectHistoryChat(chat)" :class="['w-full text-left text-[13px] px-3 py-2.5 rounded-lg truncate transition cursor-pointer', activeSessionId === chat.sessionId ? 'bg-white text-[#E30613] font-semibold border-l-4 border-[#E30613] shadow-2xs' : 'text-[#031B39] hover:bg-white/60']">
             {{ chat.title }}
           </button>
         </div>
@@ -71,9 +71,6 @@
                 <div class="bg-[#EBF1F8] text-[#031B39] text-[14px] leading-relaxed p-4 rounded-2xl rounded-tl-none border border-slate-200/60 shadow-2xs">
                   {{ msg.text }}
                 </div>
-                <div v-if="msg.sources && msg.sources.length" class="flex flex-wrap gap-1.5">
-                  <span v-for="(src, sIdx) in msg.sources" :key="sIdx" class="text-[10px] bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded font-mono shadow-2xs">📄 {{ src }}</span>
-                </div>
               </div>
             </div>
             <div v-else class="max-w-xl">
@@ -92,13 +89,16 @@
           </div>
         </div>
 
-        <div class="p-4 md:p-6 bg-[#F0F2F5] border-t border-slate-200/80 flex justify-center">
+        <div v-if="!isReadOnly" class="p-4 md:p-6 bg-[#F0F2F5] border-t border-slate-200/80 flex justify-center">
           <form @submit.prevent="sendMessage" class="max-w-4xl w-full flex items-center gap-3 bg-white border border-slate-300 rounded-xl px-4 py-2.5 shadow-xs focus-within:border-[#E30613] transition">
             <input v-model="inputMessage" type="text" placeholder="Message TİKAI..." class="flex-1 bg-transparent text-[14px] focus:outline-none text-[#031B39] placeholder-slate-400" />
             <button type="submit" :disabled="!inputMessage.trim() || isLoading" class="w-8 h-8 bg-[#E30613] hover:bg-[#c40510] disabled:opacity-40 text-white rounded-lg flex items-center justify-center transition shrink-0 cursor-pointer">
               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
             </button>
           </form>
+        </div>
+        <div v-else class="p-4 bg-amber-50 border-t border-amber-200 text-amber-800 text-xs text-center font-medium">
+          👁️ Bu sohbet sizinle paylaşılmıştır (Salt Okunur / Read-Only Modu). Yeni mesaj gönderilemez.
         </div>
       </main>
     </div>
@@ -114,8 +114,10 @@
           <div>
             <label class="block text-xs font-semibold text-[#031B39] mb-1">Select Colleague Email</label>
             <select v-model="selectedColleagueEmail" class="w-full px-3.5 py-2.5 bg-[#F0F2F5] border border-slate-200 rounded-lg text-xs text-[#031B39] focus:outline-none focus:border-[#E30613] cursor-pointer">
-              <option value="" disabled selected>Select an email...</option>
-              <option v-for="colleague in departmentColleagues" :key="colleague.email" :value="colleague.email">{{ colleague.name }} ({{ colleague.email }})</option>
+              <option value="" disabled selected>Departman arkadaşı seçin...</option>
+              <option v-for="colleague in departmentColleagues" :key="colleague.email" :value="colleague.email">
+                {{ colleague.name }} (Read-Only Erişim)
+              </option>
             </select>
           </div>
           <div>
@@ -133,51 +135,113 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
+
+const isReadOnly = ref(false)
 
 const currentUser = ref({ name: '', firstName: '', email: '', departmentKey: 'it', departmentName: 'Department of Information Technology' })
 
-// --- NOVA FUNKCIJA ZA PREUZIMANJE HISTORIJE IZ JAVE ---
+const authFetch = async (url, options = {}) => {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      'Authorization': `Bearer ${localStorage.getItem('token')}`
+    }
+  })
+  if (response.status === 401) {
+    localStorage.removeItem('token')
+    localStorage.removeItem('userEmail')
+    localStorage.setItem('redirectUrl', route.fullPath)
+    router.push('/login')
+    throw new Error('Token istekao')
+  }
+  return response
+}
+
 const fetchChatHistory = async () => {
   try {
-    const response = await fetch('http://localhost:8080/api/chat/history', {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    })
-
+    const response = await authFetch('http://localhost:8080/api/chat/history')
     if (response.ok) {
       const historyData = await response.json()
-
-      // Mapiramo Java format (MessageDTO) u Vue format ({sender: 'user/ai', text: '...'})
       chatHistory.value = historyData.map(session => {
         const mappedMessages = []
-
         session.messages.forEach(m => {
-          // Dodajemo pitanje korisnika
           mappedMessages.push({ sender: 'user', text: m.question })
-          // Dodajemo odgovor AI-ja (ako postoji)
-          if (m.answer) {
-            mappedMessages.push({ sender: 'ai', text: m.answer })
-          }
+          if (m.answer) mappedMessages.push({ sender: 'ai', text: m.answer })
         })
-
-        return {
-          sessionId: session.sessionId,
-          title: session.title,
-          messages: mappedMessages
-        }
+        return { sessionId: session.sessionId, title: session.title, messages: mappedMessages }
       })
     }
   } catch (error) {
-    console.warn('Historija se nije mogla učitati (Java API možda nije spreman):', error)
+    console.warn('Historija se nije mogla učitati:', error)
   }
 }
 
-onMounted(() => {
+const fetchColleagues = async () => {
+  try {
+    const response = await authFetch('http://localhost:8080/api/users/colleagues')
+    if (response.ok) {
+      const data = await response.json()
+      console.log("Podaci iz Jave (UserSummaryDto):", data)
+
+      departmentColleagues.value = data.map(u => ({
+        name: u.fullName || u.username || u.email,
+        email: u.email
+      }))
+    }
+  } catch (error) {
+    console.warn('Kolege se nisu mogle učitati:', error)
+  }
+}
+
+// Izdvojena logika za učitavanje chata iz ?session_id= query parametra.
+// Poziva se i iz onMounted (prvi ulazak na stranicu) i iz watch-a ispod
+// (kad se query promijeni dok je komponenta već mount-ovana, npr. klik na share link
+// dok si već na /chat — Vue Router ne remontira komponentu samo zbog promjene query-ja).
+const loadSessionFromQuery = async (sharedSessionId) => {
+  if (!sharedSessionId) return
+
+  const myChat = chatHistory.value.find(c => c.sessionId === sharedSessionId)
+
+  if (myChat) {
+    // SLUČAJ 1: Ovo je chat trenutnog korisnika (vlasnik je kliknuo svoj link ili ga ima u historiji)
+    selectHistoryChat(myChat)
+    isReadOnly.value = false
+  } else {
+    // SLUČAJ 2: Ovo je tuđi chat (poslan mu je preko share-a). Pitamo Javu da li ima pravo pristupa!
+    try {
+      const resp = await authFetch(`http://localhost:8080/api/chat/shared/${sharedSessionId}`)
+      const data = await resp.json()
+
+      if (data.status === 'success') {
+        activeSessionId.value = sharedSessionId
+        messages.value = data.messages
+        currentSessionId.value = sharedSessionId
+        isReadOnly.value = true
+        scrollToBottom()
+      } else {
+        alert(data.message)
+        router.replace('/chat')
+      }
+    } catch (e) {
+      console.error("Paylaşılan sohbet yüklenemedi:", e)
+    }
+  }
+}
+
+onMounted(async () => {
   const token = localStorage.getItem('token')
-  if (!token) { router.push('/login'); return }
+
+  if (!token) {
+    localStorage.setItem('redirectUrl', route.fullPath)
+    router.push('/login')
+    return
+  }
 
   const email = localStorage.getItem('userEmail') || ''
   const namePart = email.split('@')[0].replace('.', ' ')
@@ -185,8 +249,16 @@ onMounted(() => {
 
   currentUser.value = { ...currentUser.value, name: displayName || email, firstName: displayName.split(' ')[0] || email, email: email }
 
-  // Učitavamo historiju sa servera kada se stranica otvori
-  fetchChatHistory()
+  await fetchChatHistory()
+  await fetchColleagues()
+
+  await loadSessionFromQuery(route.query.session_id)
+})
+
+// Ako se query (session_id) promijeni dok je ChatView već mount-ovan
+// (npr. klik na share link dok si već na /chat), ovo pokreće isto učitavanje.
+watch(() => route.query.session_id, (newId) => {
+  if (newId) loadSessionFromQuery(newId)
 })
 
 const departmentPrompts = {
@@ -196,12 +268,7 @@ const departmentPrompts = {
 
 const currentDepartmentPrompts = computed(() => departmentPrompts[currentUser.value.departmentKey] || departmentPrompts['it'])
 
-const departmentColleagues = ref([
-  { name: 'Safiye Alaca', email: 'safyealaca@gmail.com', departmentKey: 'it' },
-  { name: 'Zeynep Demir', email: 'zeynep.demir@tika.gov.tr', departmentKey: 'it' },
-  { name: 'Mehmet Öz', email: 'mehmet.oz@tika.gov.tr', departmentKey: 'it' }
-])
-
+const departmentColleagues = ref([])
 const isProfileOpen = ref(false)
 const showShareModal = ref(false)
 const selectedColleagueEmail = ref('')
@@ -212,9 +279,15 @@ const isLoading = ref(false)
 const currentSessionId = ref(null)
 
 const chatHistory = ref([])
-const activeChatTitle = ref('')
+const activeSessionId = ref(null)
 const messages = ref([])
 const inputMessage = ref('')
+
+// Naslov trenutno aktivnog chata — koristi se za share modal, pošto activeChatTitle više ne postoji.
+const currentChatTitle = computed(() => {
+  const found = chatHistory.value.find(c => c.sessionId === activeSessionId.value)
+  return found ? found.title : 'Paylaşılan Sohbet'
+})
 
 const scrollToBottom = () => {
   nextTick(() => {
@@ -229,16 +302,19 @@ const sendSuggestedPrompt = (promptText) => {
 }
 
 const selectHistoryChat = (chat) => {
-  activeChatTitle.value = chat.title
+  activeSessionId.value = chat.sessionId
   messages.value = [...chat.messages]
   currentSessionId.value = chat.sessionId
+  isReadOnly.value = false
   scrollToBottom()
 }
 
 const startNewChat = () => {
-  activeChatTitle.value = ''
+  activeSessionId.value = null
   messages.value = []
   currentSessionId.value = null
+  isReadOnly.value = false
+  router.replace('/chat')
 }
 
 const sendMessage = async () => {
@@ -251,24 +327,22 @@ const sendMessage = async () => {
   scrollToBottom()
 
   try {
-    const response = await fetch('http://localhost:8080/api/chat/ask', {
+    const response = await authFetch('http://localhost:8080/api/chat/ask', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question: userText, sessionId: currentSessionId.value })
     })
 
-    if (response.status === 401) { router.push('/login'); return }
-
+    if (!response.ok) {
+      messages.value.push({ sender: 'ai', text: 'Sunucuya ulaşılamadı. Lütfen tekrar deneyin.' })
+      return
+    }
     const data = await response.json()
     currentSessionId.value = data.sessionId
+    activeSessionId.value = data.sessionId
 
-    messages.value.push({
-      sender: 'ai',
-      text: data.answer,
-      sources: data.sources || []
-    })
+    messages.value.push({ sender: 'ai', text: data.answer, sources: data.sources || [] })
 
-    // LOGIKA ZA HISTORIJU: Ako ne postoji, dodajemo na vrh liste
     const existingChat = chatHistory.value.find(c => c.sessionId === data.sessionId)
     if (!existingChat) {
       chatHistory.value.unshift({
@@ -286,32 +360,36 @@ const sendMessage = async () => {
 }
 
 const sendShareEmail = async () => {
-  if (!selectedColleagueEmail.value) return
+  if (!selectedColleagueEmail.value || !currentSessionId.value) {
+    alert('Lütfen önce bir sohbet seçin ve arkadaşınızı belirleyin.')
+    return
+  }
   isSharing.value = true
 
-  const formattedMessages = messages.value.map(msg => ({
-    role: msg.sender === 'user' ? 'user' : 'assistant',
-    content: msg.text
-  }))
-
   try {
-    const response = await fetch('http://localhost:8000/api/share', {
+    const response = await authFetch('http://localhost:8080/api/chat/share-in-app', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        session_id: currentSessionId.value,
+        session_title: currentChatTitle.value,
         recipient_email: selectedColleagueEmail.value,
-        messages: formattedMessages,
-        note: shareNote.value,
-        sender_name: currentUser.value.name
+        sender_name: currentUser.value.name,
+        note: shareNote.value
       })
     })
     const data = await response.json()
     if (data.status === 'success') {
       shareSuccess.value = true
-      setTimeout(() => { shareSuccess.value = false; showShareModal.value = false; selectedColleagueEmail.value = ''; shareNote.value = '' }, 2000)
+      setTimeout(() => {
+        shareSuccess.value = false;
+        showShareModal.value = false;
+        selectedColleagueEmail.value = '';
+        shareNote.value = ''
+      }, 2000)
     }
   } catch (error) {
-    alert('E-posta gönderilirken hata oluştu.')
+    alert('Paylaşım sırasında hata oluştu.')
   } finally {
     isSharing.value = false
   }
@@ -319,6 +397,7 @@ const sendShareEmail = async () => {
 
 const logout = () => {
   localStorage.removeItem('token')
+  localStorage.removeItem('userEmail')
   router.push('/login')
 }
 </script>

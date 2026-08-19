@@ -135,6 +135,15 @@ CREATE TABLE password_reset_requests (
     CONSTRAINT check_reset_status CHECK (status IN ('pending', 'approved', 'rejected', 'used'))
 );
 
+CREATE TABLE IF NOT EXISTS shared_chats (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID NOT NULL,
+    sender_email VARCHAR(255) NOT NULL,
+    target_user_email VARCHAR(255) NOT NULL,
+    permission VARCHAR(50) DEFAULT 'READ_ONLY',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    note TEXT
+);
 -- INDEKSI
 CREATE INDEX idx_chunks_document_id ON chunks(document_id);
 CREATE INDEX idx_messages_session_id ON messages(session_id);
@@ -150,6 +159,8 @@ CREATE INDEX idx_user_invites_email ON user_invites(email);
 CREATE INDEX idx_user_invites_token ON user_invites(invite_token);
 CREATE INDEX idx_password_reset_user_id ON password_reset_requests(user_id);
 CREATE INDEX idx_password_reset_status ON password_reset_requests(status);
+CREATE INDEX IF NOT EXISTS idx_shared_chats_target_email ON shared_chats(target_user_email);
+CREATE INDEX IF NOT EXISTS idx_shared_chats_session_id ON shared_chats(session_id);
 
 -- DEFAULT ADMIN ACCOUNT (Password: admin123)
 INSERT INTO users (full_name, username, email, password_hash, department, user_role, is_active, email_verified)

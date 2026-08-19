@@ -31,4 +31,11 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
         ORDER BY day
         """, nativeQuery = true)
     List<Object[]> dailyMessageCountsLast14Days();
+
+    @Query(value = "SELECT m.created_at, u.full_name, m.question, 'Temiz' as risk, m.session_id, m.tokens_used " +
+            "FROM messages m " +
+            "JOIN chat_sessions cs ON m.session_id = cs.id " +
+            "JOIN users u ON cs.user_id = u.id " +
+            "ORDER BY m.created_at DESC LIMIT 50", nativeQuery = true)
+    List<Object[]> findRecentQaHistory();
 }

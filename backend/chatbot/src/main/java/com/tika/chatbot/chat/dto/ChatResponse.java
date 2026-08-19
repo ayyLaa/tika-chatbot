@@ -6,5 +6,9 @@ import java.util.UUID;
 public record ChatResponse(
         UUID sessionId,
         String answer,
-        List<String> sources
-) {}
+        List<SourceDto> sources,
+        Integer responseTimeMs,
+        Integer tokensUsed
+) {
+
+}

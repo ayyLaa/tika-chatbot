@@ -7,15 +7,13 @@ import com.tika.chatbot.auth.exception.UserNotFoundException;
 import com.tika.chatbot.auth.model.PasswordResetRequest;
 import com.tika.chatbot.auth.model.User;
 import com.tika.chatbot.auth.model.UserInvite;
-import com.tika.chatbot.chat.repository.MessageFeedbackRepository;
+import com.tika.chatbot.auth.repository.LoginHistoryRepository;
+import com.tika.chatbot.chat.repository.*;
 import com.tika.chatbot.auth.repository.PasswordResetRequestRepository;
 import com.tika.chatbot.auth.repository.UserInviteRepository;
 import com.tika.chatbot.auth.repository.UserRepository;
-import com.tika.chatbot.chat.repository.ChunkRepository;
-import com.tika.chatbot.chat.repository.DocumentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.tika.chatbot.chat.repository.MessageRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,10 +29,11 @@ public class AdminService {
     private final DocumentRepository documentRepository;
     private final ChunkRepository chunkRepository;
     private final MessageRepository messageRepository;
+    private final LoginHistoryRepository loginHistoryRepository;
 
     private final MessageFeedbackRepository messageFeedbackRepository;
 
-    public AdminService(UserRepository userRepository, AuditLogService auditLogService, EmailService emailService, UserInviteRepository inviteRepository, PasswordResetRequestRepository resetRequestRepository, DocumentRepository documentRepository, ChunkRepository chunkRepository, MessageRepository messageRepository, MessageFeedbackRepository messageFeedbackRepository) {
+    public AdminService(UserRepository userRepository, AuditLogService auditLogService, EmailService emailService, UserInviteRepository inviteRepository, PasswordResetRequestRepository resetRequestRepository, DocumentRepository documentRepository, ChunkRepository chunkRepository, MessageRepository messageRepository, LoginHistoryRepository loginHistoryRepository, MessageFeedbackRepository messageFeedbackRepository) {
         this.userRepository = userRepository;
         this.auditLogService = auditLogService;
         this.emailService = emailService;
@@ -43,6 +42,7 @@ public class AdminService {
         this.documentRepository = documentRepository;
         this.chunkRepository = chunkRepository;
         this.messageRepository = messageRepository;
+        this.loginHistoryRepository = loginHistoryRepository;
         this.messageFeedbackRepository = messageFeedbackRepository;
     }
 
@@ -51,10 +51,13 @@ public class AdminService {
         User user = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new UserNotFoundException(targetUserId));
 
-        user.setIsActive(false);
+
+        user.setIsActive(!user.getIsActive());
         userRepository.save(user);
 
-        auditLogService.logAction(adminId, "user_removed", targetUserId);
+
+        String actionString = user.getIsActive() ? "user_activated" : "user_deactivated";
+        auditLogService.logAction(adminId, actionString, targetUserId);
     }
 
     public void inviteUser(String email, String role, UUID adminId) {
@@ -110,10 +113,20 @@ public class AdminService {
         if (roleFilter != null) {
             stream = stream.filter(u -> u.getUserRole().equalsIgnoreCase(roleFilter));
         }
-        return stream.map(u -> new UserSummaryDto(
-                u.getId(), u.getFullName(), u.getUsername(), u.getEmail(),
-                u.getDepartment(), u.getUserRole(), u.getIsActive(), null
-        )).toList();
+
+        return stream.map(u -> {
+            // Tražimo posljednji login za ovog korisnika
+            String lastLoginTime = loginHistoryRepository
+                    .findFirstByUserIdOrderByDateTimeDesc(u.getId())
+                    .map(login -> login.getDateTime().toString())
+                    .orElse("Belirsiz"); // Ako se nikad nije logovao
+
+            return new UserSummaryDto(
+                    u.getId(), u.getFullName(), u.getUsername(), u.getEmail(),
+                    u.getDepartment(), u.getUserRole(), u.getIsActive(),
+                    lastLoginTime // <-- Šaljemo taj datum u Vue.js
+            );
+        }).toList();
     }
 
     public VectorStatusResponse getVectorStatus() {
@@ -147,5 +160,15 @@ public class AdminService {
         Double avgTimeSeconds = avgTime != null ? avgTime / 1000.0 : null;
 
         return new AnalyticsResponse(tokens, avgTimeSeconds, activeUsers, satisfaction, daily);
+    }
+
+    public List<QaHistoryDto> getQaHistory() {
+        return messageRepository.findRecentQaHistory().stream()
+                .map(row -> new QaHistoryDto(
+                        row[0].toString(), (String) row[1], (String) row[2],
+                        (String) row[3], row[4] != null ? row[4].toString() : "-",
+                        row[5] != null ? ((Number) row[5]).shortValue() : null
+                ))
+                .toList();
     }
 }

@@ -187,51 +187,46 @@ onMounted(() => {
 
 const handleAuth = async () => {
   if (isLogin.value) {
-    // -------------------------
-    // 1. GİRİŞ YAPMA (LOGIN) UCU
-    // -------------------------
     try {
       const response = await fetch('http://localhost:8080/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: form.email,
-          password: form.password
-        })
+        body: JSON.stringify({ email: form.email, password: form.password })
       })
 
       if (response.ok) {
         const data = await response.json()
-
-        // Java'dan gelen Token ve Rol bilgilerini tarayıcıya kaydet
         localStorage.setItem('token', data.token)
-        localStorage.setItem('role', data.role) // 'Admin' veya 'User' dönecek
+        localStorage.setItem('role', data.role)
         localStorage.setItem('userEmail', form.email)
 
-        // Rolüne göre sayfaya yönlendir
         const role = data.role ? data.role.toLowerCase() : ''
         if (role === 'admin') {
           router.push('/admin')
         } else {
-          router.push('/chat')
+          const redirectUrl = localStorage.getItem('redirectUrl')
+          if (redirectUrl) {
+            localStorage.removeItem('redirectUrl')
+            router.push(redirectUrl)
+          } else {
+            router.push('/chat')
+          }
         }
       } else {
-        alert('Giriş başarısız. Lütfen e-posta ve şifrenizi kontrol edin.')
+        const data = await response.json().catch(() => null)
+        alert(data?.message || 'Giriş başarısız. Lütfen e-posta ve şifrenizi kontrol edin.')
       }
     } catch (error) {
       console.error('Login Hatası:', error)
       alert('Sunucuya bağlanılamadı. Docker servislerinin açık olduğundan emin olun.')
     }
   } else {
-    // -------------------------
-    // 2. DAVET KABUL ETME (SIGN UP) UCU
-    // -------------------------
     try {
       const response = await fetch('http://localhost:8080/api/auth/accept-invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          token: route.query.token || '', // URL'den alınan davet şifresi
+          token: route.query.token || '',
           fullName: form.name,
           password: form.password,
           phoneNumber: form.phone,
@@ -241,10 +236,11 @@ const handleAuth = async () => {
 
       if (response.ok) {
         alert('Hesabınız başarıyla oluşturuldu! Şimdi giriş yapabilirsiniz.')
-        isLogin.value = true // Formu Login'e çevir
-        form.password = '' // Güvenlik için şifre alanını temizle
+        isLogin.value = true
+        form.password = ''
       } else {
-        alert('Kayıt başarısız. Davet linkinizin süresi dolmuş veya geçersiz olabilir.')
+        const data = await response.json().catch(() => null)
+        alert(data?.message || 'Kayıt başarısız. Davet linkinizin süresi dolmuş veya geçersiz olabilir.')
       }
     } catch (error) {
       console.error('Kayıt Hatası:', error)

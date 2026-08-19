@@ -1,9 +1,7 @@
 package com.tika.chatbot.auth.controller;
 
 import com.tika.chatbot.auth.config.CustomUserDetails;
-import com.tika.chatbot.auth.dto.InviteRequest;
-import com.tika.chatbot.auth.dto.UserSummaryDto;
-import com.tika.chatbot.auth.dto.VectorStatusResponse;
+import com.tika.chatbot.auth.dto.*;
 import com.tika.chatbot.auth.model.PasswordResetRequest;
 import com.tika.chatbot.auth.repository.PasswordResetRequestRepository;
 import com.tika.chatbot.auth.service.AdminService;
@@ -74,5 +72,15 @@ public class AdminController {
     @GetMapping("/vector-status")
     public ResponseEntity<VectorStatusResponse> getVectorStatus() {
         return ResponseEntity.ok(adminService.getVectorStatus());
+    }
+
+    @GetMapping("/qa-history")
+    public ResponseEntity<List<QaHistoryDto>> getQaHistory() {
+        return ResponseEntity.ok(adminService.getQaHistory());
+    }
+
+    @GetMapping("/analytics")
+    public ResponseEntity<AnalyticsResponse> getAnalytics() {
+        return ResponseEntity.ok(adminService.getAnalytics());
     }
 }

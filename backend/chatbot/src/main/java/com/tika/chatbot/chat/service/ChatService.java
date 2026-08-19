@@ -1,5 +1,6 @@
 package com.tika.chatbot.chat.service;
 
+import com.tika.chatbot.auth.exception.UnauthorizedActionException;
 import com.tika.chatbot.chat.dto.*;
 import com.tika.chatbot.chat.model.ChatSession;
 import com.tika.chatbot.chat.model.Message;
@@ -38,7 +39,15 @@ public class ChatService {
 
     public ChatResponse askQuestion(UUID userId, String userEmail, UUID sessionId, String question) {
         UUID actualSessionId = sessionId;
-        if (actualSessionId == null) {
+        if (sessionId != null) {
+            ChatSession session = sessionRepository.findById(sessionId)
+                    .orElseThrow(() -> new RuntimeException("Sesija ne postoji.")); // Dodano () ->
+
+            if (!session.getUserId().equals(userId)) {
+                throw new RuntimeException("Nemate dozvolu za nastavak ovog razgovora.");
+            }
+        } else {
+            // Kreiranje nove sesije ako je sessionId null
             ChatSession session = new ChatSession();
             session.setUserId(userId);
             session.setTitle(question.length() > 50 ? question.substring(0, 50) : question);
@@ -46,13 +55,17 @@ public class ChatService {
         }
 
         List<Message> history = messageRepository.findBySessionIdOrderByCreatedAtAsc(actualSessionId);
-        List<PythonChatMessage> historyDto = new ArrayList<>();
+        List<ConversationTurnDto> historyDto = new ArrayList<>();
         for (Message m : history) {
-            historyDto.add(new PythonChatMessage("user", m.getQuestion()));
-            historyDto.add(new PythonChatMessage("assistant", m.getAnswer()));
+            historyDto.add(new ConversationTurnDto(m.getQuestion(), m.getAnswer()));
         }
 
-        PythonQueryRequest pyRequest = new PythonQueryRequest(question, userEmail, historyDto);
+        PythonQueryRequest pyRequest = new PythonQueryRequest(
+                actualSessionId.toString(),   // sessionId
+                question,                      // question
+                5,                              // topK
+                historyDto                      // conversationHistory
+        );
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -60,18 +73,24 @@ public class ChatService {
         HttpEntity<PythonQueryRequest> requestEntity = new HttpEntity<>(pyRequest, headers);
 
         PythonQueryResponse response = restTemplate.postForObject(
-                aiServiceUrl + "/api/chat", requestEntity, PythonQueryResponse.class
+                aiServiceUrl + "/query", requestEntity, PythonQueryResponse.class
         );
 
         Message message = new Message();
         message.setSessionId(actualSessionId);
         message.setQuestion(question);
-        message.setAnswer(response.reply());
+        message.setAnswer(response.answer());
+        message.setResponseTimeMs(response.responseTimeMs());
+        message.setTokensUsed(response.tokensUsed());
         messageRepository.save(message);
 
-        List<String> sources = response.sources() != null ? response.sources() : List.of();
+        List<SourceDto> sources = response.sources() != null
+                ? response.sources().stream()
+                .map(s -> new SourceDto(s.document(), s.page(), s.chunkId()))
+                .toList()
+                : List.of();
 
-        return new ChatResponse(actualSessionId, response.reply(), sources);
+        return new ChatResponse(actualSessionId, response.answer(), sources, response.responseTimeMs(), response.tokensUsed());
     }
 
     public List<ChatSessionDTO> getUserChatHistory(UUID userId) {

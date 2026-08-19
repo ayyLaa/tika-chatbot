@@ -50,7 +50,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/accept-invite", "/auth/login",
                                 "/auth/forgot-password", "/auth/reset-password", "/auth/invite-details").permitAll()
-                        .requestMatchers("/admin/**").permitAll() // <-- Geçici olarak serbest bırakıldı (403 hatasını aşmak için)
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

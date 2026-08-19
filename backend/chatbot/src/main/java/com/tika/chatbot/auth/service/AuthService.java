@@ -2,9 +2,11 @@ package com.tika.chatbot.auth.service;
 
 import com.tika.chatbot.auth.dto.*;
 import com.tika.chatbot.auth.exception.*;
+import com.tika.chatbot.auth.model.LoginHistory;
 import com.tika.chatbot.auth.model.PasswordResetRequest;
 import com.tika.chatbot.auth.model.User;
 import com.tika.chatbot.auth.model.UserInvite;
+import com.tika.chatbot.auth.repository.LoginHistoryRepository;
 import com.tika.chatbot.auth.repository.PasswordResetRequestRepository;
 import com.tika.chatbot.auth.repository.UserInviteRepository;
 import com.tika.chatbot.auth.repository.UserRepository;
@@ -14,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.tika.chatbot.auth.dto.InviteDetailsResponse;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -25,15 +26,17 @@ public class AuthService {
     private final EmailService emailService;
     private final UserInviteRepository inviteRepository;
     private final PasswordResetRequestRepository resetRequestRepository;
+    private final LoginHistoryRepository loginHistoryRepository;
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                       JwtService jwtService, EmailService emailService, UserInviteRepository inviteRepository, PasswordResetRequestRepository resetRequestRepository) {
+                       JwtService jwtService, EmailService emailService, UserInviteRepository inviteRepository, PasswordResetRequestRepository resetRequestRepository, LoginHistoryRepository loginHistoryRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.emailService = emailService;
         this.inviteRepository = inviteRepository;
         this.resetRequestRepository = resetRequestRepository;
+        this.loginHistoryRepository = loginHistoryRepository;
     }
 
     public void acceptInvite(String token, String fullName, String password, String phoneNumber, String department) {
@@ -54,6 +57,7 @@ public class AuthService {
         user.setUserRole(invite.getInvitedRole());
         user.setEmailVerified(true);
         user.setIsActive(true);
+
 
         userRepository.save(user);
 
@@ -102,6 +106,12 @@ public class AuthService {
         }
 
         String token = jwtService.generateToken(user.getId(), user.getEmail(), user.getUserRole());
+
+        LoginHistory history = new LoginHistory();
+        history.setUserId(user.getId());
+        history.setTypeLogin("SUCCESS");
+        history.setDateTime(LocalDateTime.now());
+        loginHistoryRepository.save(history);
         return new AuthResponse(token, user.getFullName(), user.getEmail(), user.getUserRole());
     }
 

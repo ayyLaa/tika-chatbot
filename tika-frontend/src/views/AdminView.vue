@@ -69,6 +69,13 @@
         </div>
       </aside>
 
+      <div v-if="usersError" class="p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg mb-4">
+        ⚠️ {{ usersError }}
+      </div>
+      <div v-else-if="users.length === 0" class="p-6 text-center text-gray-500 text-sm">
+        Veritabanında henüz kullanıcı bulunmuyor.
+      </div>
+
       <!-- Sağ İçerik Alanı -->
       <main class="flex-1 p-6">
         <!-- KULLANICILAR TAB'İ -->
@@ -143,16 +150,15 @@
                         </span>
                     </td>
                     <td class="p-3 text-[11px]">
-                        <span class="flex items-center space-x-1.5">
-                          <span class="w-1.5 h-1.5 rounded-full bg-black"></span>
-                          <span class="text-gray-900">Aktif</span>
-                        </span>
+                          <span class="flex items-center space-x-1.5">
+                              <span :class="user.status === 'Aktif' ? 'bg-green-500' : 'bg-gray-400'" class="w-1.5 h-1.5 rounded-full"></span>
+                              <span class="text-gray-900">{{ user.status }}</span>
+                          </span>
                     </td>
-                    <td class="p-3 text-gray-500 text-[11px]">Belirsiz</td>
+                    <td class="p-3 text-gray-500 text-[11px]">{{ user.lastLogin }}</td>
                     <td class="p-3 text-right space-x-1">
                       <button v-if="user.status !== 'Askıda'" @click="suspendUser(user)" class="px-2 py-1 border border-gray-300 rounded text-[10px] font-semibold text-gray-700 hover:bg-gray-100 cursor-pointer">Askıya al</button>
                       <button v-else @click="suspendUser(user)" class="px-2 py-1 border border-gray-300 rounded text-[10px] font-semibold text-gray-700 hover:bg-gray-100 cursor-pointer">Geri al</button>
-                      <button @click="deleteUser(user)" class="px-2 py-1 border border-gray-300 rounded text-[10px] font-semibold text-red-600 hover:bg-red-50 cursor-pointer">Sil</button>
                     </td>
                   </tr>
                   </tbody>
@@ -186,6 +192,7 @@
           </div>
         </div>
 
+
         <!-- VEKTÖR VERİTABANI TAB'İ -->
         <div v-else-if="activeTab === 'vector'" class="space-y-6">
           <div class="flex justify-between items-center">
@@ -193,6 +200,10 @@
               <span class="text-[11px] font-bold text-red-600 tracking-wider uppercase">BİLGİ HAVUZU DURUMU</span>
               <h1 class="text-3xl font-extrabold text-black">Vektör Veritabanı</h1>
             </div>
+          </div>
+
+          <div v-if="documentsError" class="p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg mb-4">
+            ⚠️ {{ documentsError }}
           </div>
 
           <div class="grid grid-cols-4 gap-4">
@@ -227,14 +238,27 @@
               </thead>
               <tbody class="divide-y divide-gray-200 font-medium text-gray-800">
               <tr v-for="(doc, i) in documents" :key="i" class="hover:bg-gray-50">
-                <td class="p-3 font-semibold">{{ doc.name }}</td>
-                <td class="p-3 text-gray-500">{{ doc.pool }}</td>
+                <!-- 1. Ime fajla (Java šalje fileName) -->
+                <td class="p-3 font-semibold">{{ doc.fileName }}</td>
+
+                <!-- 2. Havuz (Pošto nemaš ovo polje u bazi, stavit ćemo defaultno "TİKA Web") -->
+                <td class="p-3 text-gray-500">TİKA Web</td>
+
+                <!-- 3. Status (Java šalje status, a boje prilagođavamo "ready" / "processing" / "failed") -->
                 <td class="p-3">
-                    <span :class="{ 'text-gray-700 font-bold': doc.status === 'INDEXED', 'bg-[#E30613] text-white px-2 py-0.5 rounded': doc.status === 'FAILED' }">
-                      {{ doc.status }}
+                    <span :class="{
+                      'text-green-700 font-bold': doc.status === 'ready',
+                      'text-gray-500 font-bold': doc.status === 'processing',
+                      'bg-[#E30613] text-white px-2 py-0.5 rounded': doc.status === 'failed'
+                    }">
+                      {{ doc.status.toUpperCase() }}
                     </span>
                 </td>
-                <td class="p-3 font-mono">{{ doc.chunk }}</td>
+
+                <!-- 4. Chunk (Java šalje chunkCount) -->
+                <td class="p-3 font-mono">{{ doc.chunkCount }}</td>
+
+                <!-- 5. Son Senkr. (Java šalje lastSync) -->
                 <td class="p-3 text-gray-500">{{ doc.lastSync }}</td>
               </tr>
               </tbody>
@@ -251,6 +275,13 @@
             </div>
           </div>
 
+          <div v-if="analyticsError" class="p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
+            ⚠️ {{ analyticsError }}
+          </div>
+
+          <div class="grid grid-cols-4 gap-4">
+
+          </div>
           <div class="grid grid-cols-4 gap-4">
             <div class="bg-white p-4 border border-gray-200 rounded shadow-sm">
               <div class="text-xs font-bold text-gray-400 tracking-wider">AYLIK TOKEN</div>
@@ -341,6 +372,9 @@ const router = useRouter()
 const activeTab = ref('users')
 const searchQuery = ref('')
 const roleFilter = ref('all')
+const usersError = ref(null)
+const documentsError = ref(null)
+const analyticsError = ref(null)
 
 const showProfileMenu = ref(false)
 const showAddUserModal = ref(false)
@@ -382,79 +416,114 @@ const filteredUsers = computed(() => {
 
 // 1. Kullanıcıları Java (Spring Boot) Backend'den Çek
 const fetchUsers = async () => {
+  usersError.value = null
   try {
     const response = await fetch('http://localhost:8080/api/admin/users', {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     })
-    if (response.ok) {
-      const data = await response.json()
-      users.value = data.map(u => ({
-        initials: (u.firstName?.[0] || 'U') + (u.lastName?.[0] || 'S'),
-        name: `${u.firstName || ''} ${u.lastName || ''}`,
-        email: u.email,
-        role: u.role || 'User',
-        status: 'Aktif',
-      }))
-    } else {
-      throw new Error("Java Endpoint henüz hazır değil.")
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      throw new Error(data?.message || `Sunucu hatası: ${response.status}`)
     }
+    const data = await response.json()
+    users.value = data.map(u => {
+      const nameParts = (u.fullName || u.email).split(' ')
+      return {
+        id: u.id,
+        initials: (nameParts[0]?.[0] || 'U') + (nameParts[1]?.[0] || ''),
+        name: u.fullName || u.username || u.email,
+        email: u.email,
+        role: u.userRole === 'admin' ? 'Admin' : 'User',
+        status: u.isActive ? 'Aktif' : 'Askıda',
+        lastLogin: u.lastLogin,
+      }
+    })
   } catch (error) {
-    console.warn("Kullanıcılar çekilemedi, geçici veriler gösteriliyor (Java API bekleniyor).")
-    // FALLBACK: Eğer Java API hazır değilse ekran boş kalmasın diye kendi bilgilerimizi gösteriyoruz
-    users.value = [
-      { initials: 'AD', name: 'Sistem Yöneticisi', email: 'admin@tika.gov.tr', role: 'Admin', status: 'Aktif' },
-      { initials: 'AY', name: 'Ajla Frkic', email: localStorage.getItem('userEmail') || 'ajla@tika.gov.tr', role: 'User', status: 'Aktif' }
-    ]
+    console.error("Kullanıcılar çekilemedi:", error)
+    usersError.value = error.message || "Kullanıcılar yüklenemedi. Lütfen sunucu bağlantısını kontrol edin."
+    users.value = []
   }
 }
 
-// 2. Belgeleri Python (FastAPI) Backend'den Çek
 const fetchDocuments = async () => {
+  documentsError.value = null
   try {
-    const response = await fetch('http://127.0.0.1:8000/api/documents')
-    const result = await response.json()
-    if (result.status === 'success') {
-      documents.value = result.data
-      indexedDocsCount.value = documents.value.filter(d => d.status === 'INDEXED').length
-      pendingDocsCount.value = documents.value.filter(d => d.status === 'PENDING').length
-      failedDocsCount.value = documents.value.filter(d => d.status === 'FAILED').length
-      totalChunksCount.value = documents.value.reduce((sum, d) => sum + (Number(d.chunk) || 0), 0)
+    const response = await fetch('http://localhost:8080/api/admin/vector-status', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      throw new Error(data?.message || `Sunucu hatası: ${response.status}`)
     }
+    const result = await response.json()
+    documents.value = result.documents
+    indexedDocsCount.value = result.indexed
+    pendingDocsCount.value = result.pending
+    failedDocsCount.value = result.failed
+    totalChunksCount.value = result.totalChunks
   } catch (error) {
     console.error("Dokümanlar çekilemedi:", error)
+    documentsError.value = error.message || "Vektör veritabanı bilgileri yüklenemedi."
+    documents.value = []
+    indexedDocsCount.value = 0
+    pendingDocsCount.value = 0
+    failedDocsCount.value = 0
+    totalChunksCount.value = 0
   }
 }
 
-// 3. Analitik & Chat Loglarını Python (FastAPI) Backend'den Çek
 const fetchAnalytics = async () => {
+  analyticsError.value = null
   try {
-    const response = await fetch('http://127.0.0.1:8000/api/analytics')
-    const result = await response.json()
-    if (result.status === 'success') {
-      logs.value = result.logs
-      monthlyTokens.value = result.stats.monthly_tokens
-      avgResponseTime.value = result.stats.avg_response
-      activeUsersCount.value = result.stats.active_users
-      satisfactionRate.value = result.stats.satisfaction
+    const response = await fetch('http://localhost:8080/api/admin/analytics', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      throw new Error(data?.message || `Sunucu hatası: ${response.status}`)
     }
+    const result = await response.json()
+    monthlyTokens.value = result.monthlyTokens ?? 0
+    avgResponseTime.value = result.avgResponseTimeSeconds ? `${result.avgResponseTimeSeconds.toFixed(1)}s` : '0s'
+    activeUsersCount.value = result.activeUsers ?? 0
+    satisfactionRate.value = result.satisfactionPct != null ? `%${result.satisfactionPct}` : '%0'
+
+    const logResp = await fetch('http://localhost:8080/api/admin/qa-history', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (!logResp.ok) {
+      const logData = await logResp.json().catch(() => null)
+      throw new Error(logData?.message || `Sunucu hatası: ${logResp.status}`)
+    }
+    logs.value = await logResp.json()
   } catch (error) {
     console.error("Analitik veriler çekilemedi:", error)
+    analyticsError.value = error.message || "Analitik veriler yüklenemedi. Lütfen sunucu bağlantısını kontrol edin."
+    monthlyTokens.value = 0
+    avgResponseTime.value = '0s'
+    activeUsersCount.value = 0
+    satisfactionRate.value = '%0'
+    logs.value = []
   }
 }
 
-const suspendUser = (user) => {
-  // Ovdje će u budućnosti ići fetch poziv prema Javi
-  alert(`${user.name} adlı kullanıcıyı askıya alma/geri alma işlemi için Java API'si bekleniyor.`)
-  // Za sada samo vizuelno mijenjamo status u tabeli
-  user.status = user.status === 'Aktif' ? 'Askıda' : 'Aktif'
-}
-
-const deleteUser = (user) => {
-  if(confirm(`${user.name} kullanıcısını kalıcı olarak silmek istediğinize emin misiniz?`)) {
-    // Ovdje će u budućnosti ići fetch poziv prema Javi
-    alert(`Silme işlemi için Java API'si bekleniyor.`)
-    // Za sada samo vizuelno brišemo korisnika iz tabele
-    users.value = users.value.filter(u => u.email !== user.email)
+const suspendUser = async (user) => {
+  try {
+    const response = await fetch(`http://localhost:8080/api/admin/users/${user.id}/deactivate`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (response.ok) {
+      const index = users.value.findIndex(u => u.id === user.id);
+      if (index !== -1) {
+        users.value[index].status = users.value[index].status === 'Aktif' ? 'Askıda' : 'Aktif';
+      }
+    } else {
+      const data = await response.json().catch(() => null)
+      alert(data?.message || 'İşlem başarısız oldu.')
+    }
+  } catch (e) {
+    alert('Sunucuya ulaşılamadı.')
   }
 }
 // Sayfa yüklendiğinde tüm verileri çağır
@@ -490,12 +559,14 @@ const handleAddUser = async () => {
 
     if (response.ok) {
       alert(`Davet e-postası başarıyla gönderildi!`)
-      fetchUsers() // Listeyi güncelle
+      fetchUsers()
     } else {
-      alert('Davet gönderilemedi. Lütfen Java sunucusunu kontrol edin.')
+      const data = await response.json().catch(() => null)
+      alert(data?.message || 'Davet gönderilemedi. Lütfen Java sunucusunu kontrol edin.')
     }
   } catch (error) {
     console.error('Bağlantı hatası:', error)
+    alert('Sunucuya bağlanılamadı. Docker servislerinin açık olduğundan emin olun.')  // ranije nije bilo uopšte alert-a ovdje — tiho je padalo
   }
 }
 </script>

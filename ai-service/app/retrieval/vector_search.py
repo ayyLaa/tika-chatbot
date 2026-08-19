@@ -2,7 +2,7 @@ from app.db.connection import get_connection
 from app.embeddings.embedder import embed_text
 
 def search_similar_chunks(question: str, top_k: int = 5):
-    query_embedding = embed_text(question)
+    query_embedding = embed_text(question, task_type="RETRIEVAL_QUERY")
     conn = get_connection()
     cur = conn.cursor()
 
