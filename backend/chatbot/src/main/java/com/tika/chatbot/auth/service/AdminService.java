@@ -3,11 +3,14 @@ package com.tika.chatbot.auth.service;
 import com.tika.chatbot.auth.dto.*;
 import com.tika.chatbot.auth.exception.EmailAlreadyExistsException;
 import com.tika.chatbot.auth.exception.InviteAlreadyExistsException;
+import com.tika.chatbot.auth.exception.ResourceNotFoundException;
 import com.tika.chatbot.auth.exception.UserNotFoundException;
 import com.tika.chatbot.auth.model.PasswordResetRequest;
 import com.tika.chatbot.auth.model.User;
 import com.tika.chatbot.auth.model.UserInvite;
 import com.tika.chatbot.auth.repository.LoginHistoryRepository;
+import com.tika.chatbot.chat.dto.RiskFlagDto;
+import com.tika.chatbot.chat.model.Message;
 import com.tika.chatbot.chat.repository.*;
 import com.tika.chatbot.auth.repository.PasswordResetRequestRepository;
 import com.tika.chatbot.auth.repository.UserInviteRepository;
@@ -170,5 +173,23 @@ public class AdminService {
                         row[5] != null ? ((Number) row[5]).shortValue() : null
                 ))
                 .toList();
+    }
+
+    public List<RiskFlagDto> getFlaggedMessages() {
+        return messageRepository.findFlaggedMessages().stream()
+                .map(row -> new RiskFlagDto(
+                        row[0].toString(), row[1].toString(), (String) row[2], (String) row[3], (String) row[4]
+                ))
+                .toList();
+    }
+
+    @Transactional
+    public void reviewRiskFlag(UUID messageId, boolean isRisky, UUID adminId) {
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Mesaj bulunamadı"));
+        message.setRiskStatus(isRisky ? "confirmed" : "clean");
+        message.setRiskReviewedBy(adminId);
+        message.setRiskReviewedAt(LocalDateTime.now());
+        messageRepository.save(message);
     }
 }

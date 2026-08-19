@@ -38,4 +38,14 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
             "JOIN users u ON cs.user_id = u.id " +
             "ORDER BY m.created_at DESC LIMIT 50", nativeQuery = true)
     List<Object[]> findRecentQaHistory();
+
+    @Query(value =
+            "SELECT m.id, m.created_at, u.email, m.question, m.risk_status " +
+                    "FROM messages m " +
+                    "JOIN chat_sessions cs ON m.session_id = cs.id " +
+                    "JOIN users u ON cs.user_id = u.id " +
+                    "WHERE m.risk_status != 'none' " +
+                    "ORDER BY m.created_at DESC",
+            nativeQuery = true)
+    List<Object[]> findFlaggedMessages();
 }

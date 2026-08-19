@@ -238,13 +238,8 @@
               </thead>
               <tbody class="divide-y divide-gray-200 font-medium text-gray-800">
               <tr v-for="(doc, i) in documents" :key="i" class="hover:bg-gray-50">
-                <!-- 1. Ime fajla (Java šalje fileName) -->
                 <td class="p-3 font-semibold">{{ doc.fileName }}</td>
-
-                <!-- 2. Havuz (Pošto nemaš ovo polje u bazi, stavit ćemo defaultno "TİKA Web") -->
                 <td class="p-3 text-gray-500">TİKA Web</td>
-
-                <!-- 3. Status (Java šalje status, a boje prilagođavamo "ready" / "processing" / "failed") -->
                 <td class="p-3">
                     <span :class="{
                       'text-green-700 font-bold': doc.status === 'ready',
@@ -254,11 +249,7 @@
                       {{ doc.status.toUpperCase() }}
                     </span>
                 </td>
-
-                <!-- 4. Chunk (Java šalje chunkCount) -->
                 <td class="p-3 font-mono">{{ doc.chunkCount }}</td>
-
-                <!-- 5. Son Senkr. (Java šalje lastSync) -->
                 <td class="p-3 text-gray-500">{{ doc.lastSync }}</td>
               </tr>
               </tbody>
@@ -266,7 +257,7 @@
           </div>
         </div>
 
-        <!-- ANALİTİK & LOGLAR TAB'İ -->
+        <!-- ANALİTİK & LOGLAR TAB'İ (sad uključuje i Risk Tespiti, dvije odvojene tabele) -->
         <div v-else-if="activeTab === 'analytics'" class="space-y-6">
           <div class="flex justify-between items-center">
             <div>
@@ -279,9 +270,6 @@
             ⚠️ {{ analyticsError }}
           </div>
 
-          <div class="grid grid-cols-4 gap-4">
-
-          </div>
           <div class="grid grid-cols-4 gap-4">
             <div class="bg-white p-4 border border-gray-200 rounded shadow-sm">
               <div class="text-xs font-bold text-gray-400 tracking-wider">AYLIK TOKEN</div>
@@ -301,10 +289,15 @@
             </div>
           </div>
 
-          <!-- SORU-CEVAP GEÇMİŞİ TABLOSU -->
+          <div v-if="riskError" class="p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
+            ⚠️ {{ riskError }}
+          </div>
+
+          <!-- İNCELEME BEKLEYENLER -->
           <div class="space-y-3">
             <div class="flex justify-between items-center">
-              <span class="text-[10px] font-bold text-gray-400 tracking-wider uppercase">GERÇEK ZAMANLI CHAT GEÇMİŞİ</span>
+              <span class="text-[10px] font-bold text-gray-400 tracking-wider uppercase">RİSK TESPİTİ — İNCELEME BEKLEYENLER</span>
+              <span v-if="pendingFlags.length > 0" class="text-[10px] font-bold text-[#E30613] bg-red-50 px-2 py-0.5 rounded">{{ pendingFlags.length }} bekliyor</span>
             </div>
 
             <div class="bg-white border border-gray-200 rounded shadow-sm overflow-hidden">
@@ -314,22 +307,55 @@
                   <th class="p-3">ZAMAN</th>
                   <th class="p-3">KULLANICI</th>
                   <th class="p-3">SORU (PROMPT)</th>
-                  <th class="p-3 text-right">RİSK TESPİTİ</th>
+                  <th class="p-3 text-right">İŞLEM</th>
                 </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 font-medium text-gray-800">
-                <tr v-for="(log, idx) in logs" :key="idx" class="hover:bg-gray-50">
-                  <td class="p-3 text-gray-500 font-mono text-[11px]">{{ log.time }}</td>
-                  <td class="p-3 font-bold text-gray-900">{{ log.user }}</td>
-                  <td class="p-3 text-gray-800 font-semibold max-w-lg">{{ log.question }}</td>
-                  <td class="p-3 text-right text-gray-400 italic text-[11px]">
-                    Temiz / Risk Yok
+                <tr v-for="flag in pendingFlags" :key="flag.messageId" class="hover:bg-gray-50 cursor-pointer" @click="selectedFlag = flag">
+                  <td class="p-3 text-gray-500 font-mono text-[11px]">{{ flag.time }}</td>
+                  <td class="p-3 font-bold text-gray-900">{{ flag.userEmail }}</td>
+                  <td class="p-3 text-gray-800 font-semibold max-w-lg truncate">{{ flag.question }}</td>
+                  <td class="p-3 text-right">
+                    <span class="text-[10px] font-bold text-[#E30613]">İncele →</span>
                   </td>
                 </tr>
                 </tbody>
               </table>
-              <div v-if="logs.length === 0" class="p-6 text-center text-gray-500 text-sm">
-                Veritabanında henüz chat kaydı bulunmuyor.
+              <div v-if="pendingFlags.length === 0" class="p-6 text-center text-gray-500 text-sm">
+                Bekleyen risk incelemesi bulunmuyor.
+              </div>
+            </div>
+          </div>
+
+          <!-- İNCELENMİŞ / GEÇMİŞ -->
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-[10px] font-bold text-gray-400 tracking-wider uppercase">RİSK TESPİTİ — İNCELENMİŞ GEÇMİŞ</span>
+            </div>
+
+            <div class="bg-white border border-gray-200 rounded shadow-sm overflow-hidden">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-gray-100 border-b border-gray-200 text-gray-500 font-bold uppercase tracking-wider">
+                <tr>
+                  <th class="p-3">ZAMAN</th>
+                  <th class="p-3">KULLANICI</th>
+                  <th class="p-3">SORU (PROMPT)</th>
+                  <th class="p-3 text-right">DURUM</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 font-medium text-gray-800">
+                <tr v-for="flag in reviewedFlags" :key="flag.messageId" class="hover:bg-gray-50 cursor-pointer" @click="selectedFlag = flag">
+                  <td class="p-3 text-gray-500 font-mono text-[11px]">{{ flag.time }}</td>
+                  <td class="p-3 font-bold text-gray-900">{{ flag.userEmail }}</td>
+                  <td class="p-3 text-gray-800 font-semibold max-w-lg truncate">{{ flag.question }}</td>
+                  <td class="p-3 text-right text-[11px]" :class="flag.riskStatus === 'confirmed' ? 'text-red-600 font-bold' : 'text-gray-400 italic'">
+                    {{ flag.riskStatus === 'confirmed' ? '🔴 Risk' : '✓ Temiz' }}
+                  </td>
+                </tr>
+                </tbody>
+              </table>
+              <div v-if="reviewedFlags.length === 0" class="p-6 text-center text-gray-500 text-sm">
+                Henüz incelenmiş kayıt bulunmuyor.
               </div>
             </div>
           </div>
@@ -360,14 +386,60 @@
         </div>
       </div>
     </div>
+
+    <!-- RİSK İNCELEME MODAL -->
+    <div v-if="selectedFlag" class="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg p-6 space-y-4">
+        <div class="flex justify-between items-start">
+          <div>
+            <span class="text-[11px] font-bold text-red-600 uppercase">Geri Bildirim Detayı</span>
+            <h3 class="text-lg font-bold text-gray-900">Risk Tespiti İncelemesi</h3>
+          </div>
+          <button @click="selectedFlag = null" class="text-gray-400 hover:text-gray-600 cursor-pointer">✕</button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <div>
+            <div class="text-gray-400 font-bold uppercase text-[10px]">Kullanıcı</div>
+            <div class="font-semibold">{{ selectedFlag.userEmail }}</div>
+          </div>
+          <div>
+            <div class="text-gray-400 font-bold uppercase text-[10px]">Zaman</div>
+            <div class="font-semibold">{{ selectedFlag.time }}</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="text-gray-400 font-bold uppercase text-[10px] mb-1">Sorulan Prompt</div>
+          <div class="bg-red-50 border border-red-100 rounded p-3 text-xs text-red-800">{{ selectedFlag.question }}</div>
+        </div>
+
+        <!-- Ako je već pregledan, samo prikaži status bez dugmadi za akciju -->
+        <div v-if="selectedFlag.riskStatus !== 'flagged'" class="pt-2">
+          <div class="text-center text-xs font-bold py-2 rounded" :class="selectedFlag.riskStatus === 'confirmed' ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-600'">
+            {{ selectedFlag.riskStatus === 'confirmed' ? '🔴 Risk olarak onaylandı' : '✓ Temiz olarak işaretlendi' }}
+          </div>
+        </div>
+        <div v-else class="flex gap-3 pt-2">
+          <button @click="reviewFlag(selectedFlag.messageId, false)" class="flex-1 py-2 border border-gray-300 rounded text-xs font-bold text-gray-700 hover:bg-gray-100 cursor-pointer">
+            ✗ Temiz (Yanlış Alarm)
+          </button>
+          <button @click="reviewFlag(selectedFlag.messageId, true)" class="flex-1 py-2 bg-[#E30613] text-white rounded text-xs font-bold hover:bg-red-700 cursor-pointer">
+            ✓ Risk Onayla
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useToast } from '../composables/useToast'
 
 const router = useRouter()
+const { showToast } = useToast()
 
 const activeTab = ref('users')
 const searchQuery = ref('')
@@ -375,6 +447,7 @@ const roleFilter = ref('all')
 const usersError = ref(null)
 const documentsError = ref(null)
 const analyticsError = ref(null)
+const riskError = ref(null)
 
 const showProfileMenu = ref(false)
 const showAddUserModal = ref(false)
@@ -385,7 +458,8 @@ const newUserRole = ref('User')
 // -- VERİ DURUMLARI (STATE) --
 const users = ref([])
 const documents = ref([])
-const logs = ref([])
+const riskFlags = ref([])
+const selectedFlag = ref(null)
 
 // Analitik İstatistikleri
 const monthlyTokens = ref('0')
@@ -412,9 +486,12 @@ const filteredUsers = computed(() => {
   })
 })
 
+// Risk flagovi podijeljeni na dvije liste
+const pendingFlags = computed(() => riskFlags.value.filter(f => f.riskStatus === 'flagged'))
+const reviewedFlags = computed(() => riskFlags.value.filter(f => f.riskStatus === 'confirmed' || f.riskStatus === 'clean'))
+
 // -- FETCH FONKSİYONLARI --
 
-// 1. Kullanıcıları Java (Spring Boot) Backend'den Çek
 const fetchUsers = async () => {
   usersError.value = null
   try {
@@ -487,15 +564,6 @@ const fetchAnalytics = async () => {
     avgResponseTime.value = result.avgResponseTimeSeconds ? `${result.avgResponseTimeSeconds.toFixed(1)}s` : '0s'
     activeUsersCount.value = result.activeUsers ?? 0
     satisfactionRate.value = result.satisfactionPct != null ? `%${result.satisfactionPct}` : '%0'
-
-    const logResp = await fetch('http://localhost:8080/api/admin/qa-history', {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    })
-    if (!logResp.ok) {
-      const logData = await logResp.json().catch(() => null)
-      throw new Error(logData?.message || `Sunucu hatası: ${logResp.status}`)
-    }
-    logs.value = await logResp.json()
   } catch (error) {
     console.error("Analitik veriler çekilemedi:", error)
     analyticsError.value = error.message || "Analitik veriler yüklenemedi. Lütfen sunucu bağlantısını kontrol edin."
@@ -503,7 +571,47 @@ const fetchAnalytics = async () => {
     avgResponseTime.value = '0s'
     activeUsersCount.value = 0
     satisfactionRate.value = '%0'
-    logs.value = []
+  }
+}
+
+const fetchRiskFlags = async () => {
+  riskError.value = null
+  try {
+    const response = await fetch('http://localhost:8080/api/admin/risk-flags', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      throw new Error(data?.message || `Sunucu hatası: ${response.status}`)
+    }
+    riskFlags.value = await response.json()
+  } catch (error) {
+    console.error("Risk flagları çekilemedi:", error)
+    riskError.value = error.message || "Risk tespitleri yüklenemedi."
+    riskFlags.value = []
+  }
+}
+
+const reviewFlag = async (messageId, isRisky) => {
+  try {
+    const response = await fetch(`http://localhost:8080/api/admin/risk-flags/${messageId}/review`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ isRisky })
+    })
+    if (response.ok) {
+      const flagEntry = riskFlags.value.find(f => f.messageId === messageId)
+      if (flagEntry) flagEntry.riskStatus = isRisky ? 'confirmed' : 'clean'
+      selectedFlag.value = null
+    } else {
+      const data = await response.json().catch(() => null)
+      showToast(data?.message || 'İşlem başarısız oldu.', 'error')
+    }
+  } catch (e) {
+    showToast('Sunucuya ulaşılamadı.', 'error')
   }
 }
 
@@ -520,17 +628,18 @@ const suspendUser = async (user) => {
       }
     } else {
       const data = await response.json().catch(() => null)
-      alert(data?.message || 'İşlem başarısız oldu.')
+      showToast(data?.message || 'İşlem başarısız oldu.', 'error')
     }
   } catch (e) {
-    alert('Sunucuya ulaşılamadı.')
+    showToast('Sunucuya ulaşılamadı.', 'error')
   }
 }
-// Sayfa yüklendiğinde tüm verileri çağır
+
 onMounted(() => {
   fetchUsers()
   fetchDocuments()
   fetchAnalytics()
+  fetchRiskFlags()
 })
 
 const handleLogout = () => {
@@ -539,7 +648,6 @@ const handleLogout = () => {
   router.push('/login')
 }
 
-// Yeni Kullanıcı Ekleme -> Spring Boot Backend (:8080)
 const handleAddUser = async () => {
   if (!newUserEmail.value) return
   const emailToInvite = newUserEmail.value
@@ -558,15 +666,15 @@ const handleAddUser = async () => {
     })
 
     if (response.ok) {
-      alert(`Davet e-postası başarıyla gönderildi!`)
+      showToast(`Davet e-postası başarıyla gönderildi!`, 'success')
       fetchUsers()
     } else {
       const data = await response.json().catch(() => null)
-      alert(data?.message || 'Davet gönderilemedi. Lütfen Java sunucusunu kontrol edin.')
+      showToast(data?.message || 'Davet gönderilemedi. Lütfen Java sunucusunu kontrol edin.', 'error')
     }
   } catch (error) {
     console.error('Bağlantı hatası:', error)
-    alert('Sunucuya bağlanılamadı. Docker servislerinin açık olduğundan emin olun.')  // ranije nije bilo uopšte alert-a ovdje — tiho je padalo
+    showToast('Sunucuya bağlanılamadı. Docker servislerinin açık olduğundan emin olun.', 'error')
   }
 }
 </script>

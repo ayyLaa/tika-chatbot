@@ -23,6 +23,7 @@ public class ChatService {
     private final RestTemplate restTemplate;
     private final ChatSessionRepository sessionRepository;
     private final MessageRepository messageRepository;
+    private final RiskKeywordChecker riskKeywordChecker;
 
     @Value("${ai.service.url}")
     private String aiServiceUrl;
@@ -31,10 +32,11 @@ public class ChatService {
     private String internalApiKey;
 
     public ChatService(RestTemplate restTemplate, ChatSessionRepository sessionRepository,
-                       MessageRepository messageRepository) {
+                       MessageRepository messageRepository, RiskKeywordChecker riskKeywordChecker) {
         this.restTemplate = restTemplate;
         this.sessionRepository = sessionRepository;
         this.messageRepository = messageRepository;
+        this.riskKeywordChecker = riskKeywordChecker;
     }
 
     public ChatResponse askQuestion(UUID userId, String userEmail, UUID sessionId, String question) {
@@ -82,6 +84,7 @@ public class ChatService {
         message.setAnswer(response.answer());
         message.setResponseTimeMs(response.responseTimeMs());
         message.setTokensUsed(response.tokensUsed());
+        message.setRiskStatus(riskKeywordChecker.isRisky(question) ? "flagged" : "none");
         messageRepository.save(message);
 
         List<SourceDto> sources = response.sources() != null

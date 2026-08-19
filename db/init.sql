@@ -60,7 +60,10 @@ CREATE TABLE messages (
     answer          TEXT,
     response_time_ms INT,
     tokens_used     INT,
-    created_at      TIMESTAMP NOT NULL DEFAULT now()
+    created_at      TIMESTAMP NOT NULL DEFAULT now(),
+    risk_status VARCHAR(20) NOT NULL DEFAULT 'none',
+    risk_reviewed_by UUID REFERENCES users(id),
+    risk_reviewed_at TIMESTAMP
 );
 
 -- MESSAGE_SOURCES

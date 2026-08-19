@@ -5,6 +5,8 @@ import com.tika.chatbot.auth.dto.*;
 import com.tika.chatbot.auth.model.PasswordResetRequest;
 import com.tika.chatbot.auth.repository.PasswordResetRequestRepository;
 import com.tika.chatbot.auth.service.AdminService;
+import com.tika.chatbot.chat.dto.ReviewRiskRequest;
+import com.tika.chatbot.chat.dto.RiskFlagDto;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -82,5 +84,19 @@ public class AdminController {
     @GetMapping("/analytics")
     public ResponseEntity<AnalyticsResponse> getAnalytics() {
         return ResponseEntity.ok(adminService.getAnalytics());
+    }
+
+    @GetMapping("/risk-flags")
+    public ResponseEntity<List<RiskFlagDto>> getRiskFlags() {
+        return ResponseEntity.ok(adminService.getFlaggedMessages());
+    }
+
+    @PatchMapping("/risk-flags/{messageId}/review")
+    public ResponseEntity<Void> reviewRiskFlag(
+            @PathVariable UUID messageId,
+            @RequestBody ReviewRiskRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentAdmin) {
+        adminService.reviewRiskFlag(messageId, request.isRisky(), currentAdmin.getId());
+        return ResponseEntity.noContent().build();
     }
 }

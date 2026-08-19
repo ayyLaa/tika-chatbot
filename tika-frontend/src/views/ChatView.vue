@@ -137,9 +137,11 @@
 <script setup>
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useToast } from '../composables/useToast'
 
 const router = useRouter()
 const route = useRoute()
+const { showToast } = useToast()
 
 const isReadOnly = ref(false)
 
@@ -225,11 +227,13 @@ const loadSessionFromQuery = async (sharedSessionId) => {
         isReadOnly.value = true
         scrollToBottom()
       } else {
-        alert(data.message)
+        // Ako email nije onaj kome je poslato, Java vraća grešku
+        showToast(data.message || 'Bu sohbete erişim yetkiniz yok.', 'error')
         router.replace('/chat')
       }
     } catch (e) {
       console.error("Paylaşılan sohbet yüklenemedi:", e)
+      showToast('Paylaşılan sohbet yüklenemedi.', 'error')
     }
   }
 }
@@ -361,7 +365,7 @@ const sendMessage = async () => {
 
 const sendShareEmail = async () => {
   if (!selectedColleagueEmail.value || !currentSessionId.value) {
-    alert('Lütfen önce bir sohbet seçin ve arkadaşınızı belirleyin.')
+    showToast('Lütfen önce bir sohbet seçin ve arkadaşınızı belirleyin.', 'error')
     return
   }
   isSharing.value = true
@@ -387,9 +391,11 @@ const sendShareEmail = async () => {
         selectedColleagueEmail.value = '';
         shareNote.value = ''
       }, 2000)
+    } else {
+      showToast(data?.message || 'Paylaşım başarısız oldu.', 'error')
     }
   } catch (error) {
-    alert('Paylaşım sırasında hata oluştu.')
+    showToast('Paylaşım sırasında hata oluştu.', 'error')
   } finally {
     isSharing.value = false
   }

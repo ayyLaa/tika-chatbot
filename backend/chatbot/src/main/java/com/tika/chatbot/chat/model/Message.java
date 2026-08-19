@@ -34,6 +34,15 @@ public class Message {
     @JoinColumn(name = "session_id", insertable = false, updatable = false)
     private ChatSession session;
 
+    @Column(name = "risk_status")
+    private String riskStatus = "none";
+
+    @Column(name = "risk_reviewed_by")
+    private UUID riskReviewedBy;
+
+    @Column(name = "risk_reviewed_at")
+    private LocalDateTime riskReviewedAt;
+
     public UUID getId() { return id; }
     public UUID getSessionId() { return sessionId; }
     public void setSessionId(UUID sessionId) { this.sessionId = sessionId; }
@@ -46,4 +55,13 @@ public class Message {
     public Integer getTokensUsed() { return tokensUsed; }
     public void setTokensUsed(Integer tokensUsed) { this.tokensUsed = tokensUsed; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public ChatSession getSession() { return session; }
+    public void setSession(ChatSession session) { this.session = session; }
+    public String getRiskStatus() { return riskStatus; }
+    public void setRiskStatus(String riskStatus) { this.riskStatus = riskStatus; }
+    public UUID getRiskReviewedBy() { return riskReviewedBy; }
+    public void setRiskReviewedBy(UUID riskReviewedBy) { this.riskReviewedBy = riskReviewedBy; }
+    public LocalDateTime getRiskReviewedAt() { return riskReviewedAt; }
+    public void setRiskReviewedAt(LocalDateTime riskReviewedAt) {}
 }

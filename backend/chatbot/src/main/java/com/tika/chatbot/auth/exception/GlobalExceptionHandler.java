@@ -97,6 +97,11 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), req);   // 503
     }
 
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex, HttpServletRequest req) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), req);
+    }
+
     private ResponseEntity<ErrorResponse> build(HttpStatus status, String message, HttpServletRequest req) {
         ErrorResponse error = new ErrorResponse(message, status.value(), req.getRequestURI());
         return ResponseEntity.status(status).body(error);
