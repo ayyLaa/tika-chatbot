@@ -36,6 +36,7 @@ build/
 target/
 .idea/
 
+
 ### Logs ###
 *.log
 logs/
