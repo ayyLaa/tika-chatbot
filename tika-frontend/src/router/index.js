@@ -8,6 +8,11 @@ const routes = [
   { path: '/chat', name: 'chat', component: ChatView, meta: { requiresAuth: true } },
   { path: '/accept-invite', name: 'AcceptInvite', component: LoginView },
   { path: '/admin', name: 'admin', component: AdminView, meta: { requiresAuth: true, requiresAdmin: true } },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: () => import('../views/ResetPasswordView.vue')
+  }
 ]
 
 const router = createRouter({

@@ -20,7 +20,7 @@ public class SharedChat {
     @Column(name = "target_user_email", nullable = false)
     private String targetUserEmail;
 
-    // DODANO: Opcionalna bilješka
+    // ADDED: Optional note
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
@@ -30,7 +30,7 @@ public class SharedChat {
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    // Getteri i Setteri
+    // Getters and Setters
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
     public UUID getSessionId() { return sessionId; }

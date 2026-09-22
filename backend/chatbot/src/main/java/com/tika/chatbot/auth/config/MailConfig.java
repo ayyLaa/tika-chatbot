@@ -1,4 +1,4 @@
-package com.tika.chatbot.auth.config; // Prilagodite paket ako se razlikuje
+package com.tika.chatbot.auth.config; // Adjust the package if it differs
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,7 +14,7 @@ public class MailConfig {
     public JavaMailSender javaMailSender() {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
         
-        // Mailtrap podešavanja
+        // Mailtrap settings
         mailSender.setHost("sandbox.smtp.mailtrap.io");
         mailSender.setPort(2525);
         mailSender.setUsername("3374666b54e1b2");
@@ -24,7 +24,7 @@ public class MailConfig {
         props.put("mail.transport.protocol", "smtp");
         props.put("mail.smtp.auth", "true");
         props.put("mail.smtp.starttls.enable", "true");
-        props.put("mail.debug", "true"); // Ovo će ispisivati detalje slanja u konzolu
+        props.put("mail.debug", "true"); // This will print sending details to the console
 
         return mailSender;
     }

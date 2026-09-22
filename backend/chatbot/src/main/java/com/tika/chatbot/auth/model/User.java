@@ -95,4 +95,37 @@ public class User {
         this.emailVerified = emailVerified;
     }
 
+    @Column(name = "reset_token")
+    private String resetToken;
+
+    @Column(name = "token_expiry_date")
+    private LocalDateTime tokenExpiryDate;
+
+    public String getResetToken() {
+        return resetToken;
+    }
+
+    public void setResetToken(String resetToken) {
+        this.resetToken = resetToken;
+    }
+
+    public LocalDateTime getTokenExpiryDate() {
+        return tokenExpiryDate;
+    }
+
+    public void setTokenExpiryDate(LocalDateTime tokenExpiryDate) {
+        this.tokenExpiryDate = tokenExpiryDate;
+    }
+    @Column(name = "reset_status")
+    private String resetStatus; // null, "pending", "approved", "rejected"
+
+    @Column(name = "reset_requested_at")
+    private LocalDateTime resetRequestedAt;
+
+    // getters/setters
+    public String getResetStatus() { return resetStatus; }
+    public void setResetStatus(String resetStatus) { this.resetStatus = resetStatus; }
+    public LocalDateTime getResetRequestedAt() { return resetRequestedAt; }
+    public void setResetRequestedAt(LocalDateTime resetRequestedAt) { this.resetRequestedAt = resetRequestedAt; }
+
 }

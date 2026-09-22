@@ -1,6 +1,6 @@
 # Hassas çevre dosyaları
 .env
-
+**/.env
 # Veritabanı ve veri klasörleri
 db/
 *.db

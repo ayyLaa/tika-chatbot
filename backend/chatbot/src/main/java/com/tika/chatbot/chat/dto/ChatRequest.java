@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record ChatRequest(
-        UUID sessionId,          // null = nova sesija
+        UUID sessionId,          // null = new session
         @NotBlank String question,
         Integer topK,
         List<ConversationTurnDto> conversationHistory

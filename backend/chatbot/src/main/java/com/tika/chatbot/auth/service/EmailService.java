@@ -41,7 +41,7 @@ public class EmailService {
         try {
             mailSender.send(message);
         } catch (MailException e) {
-            throw new EmailSendException("Pozivnica nije mogla biti poslana na " + toEmail);
+            throw new EmailSendException("Davetiye " + toEmail + " adresine gönderilemedi.");
         }
     }
 
@@ -62,7 +62,7 @@ public class EmailService {
         try {
             mailSender.send(message);
         } catch (MailException e) {
-            throw new EmailSendException("Pozivnica nije mogla biti poslana na " + toEmail);
+            throw new EmailSendException("Davetiye " + toEmail + " adresine gönderilemedi.");
         }
     }
 
@@ -86,7 +86,7 @@ public class EmailService {
         try {
             mailSender.send(message);
         } catch (MailException e) {
-            System.err.println("Greška pri slanju emaila za dijeljenje na " + toEmail + ": " + e.getMessage());
+            System.err.println("Error sending share email to " + toEmail + ": " + e.getMessage());
         }
     }
 }

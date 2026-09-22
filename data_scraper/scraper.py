@@ -20,9 +20,9 @@ def clean_text(text):
 
 
 def is_valid_tika_url(url):
-  """Sadece tika.gov.tr domainine ait geçerli web sayfalarını filtreler."""
+  """Filters only valid web pages belonging to the tika.gov.tr domain."""
   parsed = urlparse(url)
-  # Sosyal medya, dosya indirme bağlantıları ve medya uzantılarını atla
+  # Skip social media, file download links, and media extensions
   ignored_extensions = (
       '.jpg',
       '.jpeg',
@@ -46,20 +46,20 @@ def scrape_page(url):
 
     soup = BeautifulSoup(response.text, 'html.parser')
 
-    # Başlık al
+    # Get title
     title = ''
     if soup.find('h1'):
       title = soup.find('h1').get_text()
     elif soup.find('title'):
       title = soup.find('title').get_text()
 
-    # Paragrafları ve içerik metinlerini al
+    # Get paragraphs and content text
     paragraphs = [p.get_text() for p in soup.find_all(['p', 'article', 'li'])]
     content = clean_text(' '.join(paragraphs))
 
-    # Sayfadaki PDF linklerini topla
+    # Collect PDF links on the page
     pdf_urls = []
-    # Sayfadaki diğer tüm alt sayfa linklerini topla
+    # Collect all other subpage links on the page
     internal_links = set()
 
     for a_tag in soup.find_all('a', href=True):
@@ -70,7 +70,7 @@ def scrape_page(url):
         if full_url not in pdf_urls:
           pdf_urls.append(full_url)
       elif is_valid_tika_url(full_url):
-        # Sayfa içi çıpaları (#) temizle
+        # Remove in-page anchors (#)
         clean_url = full_url.split('#')[0].rstrip('/')
         if clean_url:
           internal_links.add(clean_url)

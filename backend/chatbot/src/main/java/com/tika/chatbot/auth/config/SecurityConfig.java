@@ -78,9 +78,9 @@ public class CorsConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**") // Primenjuje se na sve API rute
-                .allowedOrigins("http://localhost:5173") // Dozvoljava pristup samo vašem Vue frontendu
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Dozvoljene metode
+        registry.addMapping("/**") // Applies to all API routes
+                .allowedOrigins("http://localhost:5173") // Allows access only from your Vue frontend
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Allowed methods
                 .allowedHeaders("*")
                 .allowCredentials(true);
     }

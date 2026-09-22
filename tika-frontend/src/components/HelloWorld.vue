@@ -15,11 +15,11 @@ const count = ref(0)
       <img :src="viteLogo" class="vite" alt="Vite logo" />
     </div>
     <div>
-      <h1>Get started</h1>
-      <p>Edit <code>src/App.vue</code> and save to test <code>HMR</code></p>
+      <h1>Başlarken</h1>
+      <p><code>src/App.vue</code> dosyasını düzenleyin ve <code>HMR</code>'yi test etmek için kaydedin</p>
     </div>
     <button type="button" class="counter" @click="count++">
-      Count is {{ count }}
+      Sayı: {{ count }}
     </button>
   </section>
 
@@ -30,19 +30,19 @@ const count = ref(0)
       <svg class="icon" role="presentation" aria-hidden="true">
         <use href="/icons.svg#documentation-icon"></use>
       </svg>
-      <h2>Documentation</h2>
-      <p>Your questions, answered</p>
+      <h2>Dokümantasyon</h2>
+      <p>Sorularınızın cevapları</p>
       <ul>
         <li>
           <a href="https://vite.dev/" target="_blank">
             <img class="logo" :src="viteLogo" alt="" />
-            Explore Vite
+            Vite'ı Keşfedin
           </a>
         </li>
         <li>
           <a href="https://vuejs.org/" target="_blank">
             <img class="button-icon" :src="vueLogo" alt="" />
-            Learn more
+            Daha fazla bilgi
           </a>
         </li>
       </ul>
@@ -51,8 +51,8 @@ const count = ref(0)
       <svg class="icon" role="presentation" aria-hidden="true">
         <use href="/icons.svg#social-icon"></use>
       </svg>
-      <h2>Connect with us</h2>
-      <p>Join the Vite community</p>
+      <h2>Bizimle iletişime geçin</h2>
+      <p>Vite topluluğuna katılın</p>
       <ul>
         <li>
           <a href="https://github.com/vitejs/vite" target="_blank">

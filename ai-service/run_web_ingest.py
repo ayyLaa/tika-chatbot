@@ -38,7 +38,7 @@ def ingest_site(config):
     )
     for page in pages:
         if document_already_exists(page["url"]):
-            print(f"PRESKOČENO (već postoji): {page['url']}")
+            print(f"SKIPPED (already exists): {page['url']}")
             continue
 
         document_id = str(uuid.uuid4())

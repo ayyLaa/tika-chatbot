@@ -15,6 +15,10 @@ CREATE TABLE users (
     created_at          TIMESTAMP NOT NULL DEFAULT now(),
     email_verified      BOOLEAN NOT NULL DEFAULT FALSE,
     updated_at          TIMESTAMP NOT NULL DEFAULT now(),
+    reset_token         VARCHAR(255),
+    token_expiry_date   TIMESTAMP,
+    reset_status        VARCHAR(20),
+    reset_requested_at  TIMESTAMP
     CONSTRAINT check_user_role CHECK (user_role IN ('admin', 'user'))
 );
 

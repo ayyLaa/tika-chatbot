@@ -40,7 +40,7 @@ def download_pdf(pdf_url):
 
     return filepath
   except Exception as e:
-    print(f"   [!] PDF indirilemedi ({pdf_url}): {e}")
+    print(f"   [!] Failed to download PDF ({pdf_url}): {e}")
     return None
 
 
@@ -53,7 +53,7 @@ def extract_pdf_content(pdf_path):
         if text:
           full_text += text + " "
   except Exception as e:
-    print(f"   [!] PDF okuma hatası ({pdf_path}): {e}")
+    print(f"   [!] PDF read error ({pdf_path}): {e}")
 
   return clean_text(full_text)
 
@@ -62,14 +62,14 @@ def process_all_data():
   json_file = "tika_data.json"
 
   if not os.path.exists(json_file):
-    print("HATA: tika_data.json dosyası bulunamadı!")
+    print("ERROR: tika_data.json file not found!")
     return
 
-  print("1. tika_data.json okunuyor...")
+  print("1. Reading tika_data.json...")
   with open(json_file, "r", encoding="utf-8") as f:
     data_list = json.load(f)
 
-  print("2. Sayfalardaki PDF dosyaları taranıyor ve metinler çıkarılıyor...\n")
+  print("2. Scanning PDF files on pages and extracting text...\n")
 
   total_pdfs_processed = 0
 
@@ -78,10 +78,10 @@ def process_all_data():
     item["pdf_contents"] = []
 
     if pdf_urls:
-      print(f"[{index+1}/{len(data_list)}] Sayfada {len(pdf_urls)} PDF var.")
+      print(f"[{index+1}/{len(data_list)}] Page has {len(pdf_urls)} PDF(s).")
 
     for pdf_url in pdf_urls:
-      print(f"   -> İndiriliyor/İşleniyor: {pdf_url}")
+      print(f"   -> Downloading/Processing: {pdf_url}")
       filepath = download_pdf(pdf_url)
 
       if filepath:
@@ -94,9 +94,9 @@ def process_all_data():
   with open(output_file, "w", encoding="utf-8") as f:
     json.dump(data_list, f, ensure_ascii=False, indent=4)
 
-  print("\n=== TÜM VERİ TEMİZLEME VE İŞLEME TAMAMLANDI ===")
-  print(f"Toplam işlenen PDF sayısı: {total_pdfs_processed}")
-  print(f"Backend & AI için nihai veri dosyası: {output_file}")
+  print("\n=== ALL DATA CLEANING AND PROCESSING COMPLETED ===")
+  print(f"Total PDFs processed: {total_pdfs_processed}")
+  print(f"Final data file for Backend & AI: {output_file}")
 
 
 if __name__ == "__main__":

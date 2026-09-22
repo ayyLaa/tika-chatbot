@@ -17,7 +17,7 @@ def _call_with_timeout(fn, timeout_seconds: int):
     try:
         return future.result(timeout=timeout_seconds)
     except FutureTimeoutError:
-        raise Exception(f"Gemini poziv nije odgovorio u roku od {timeout_seconds}s.")
+        raise Exception(f"Gemini çağrısı {timeout_seconds}s içinde yanıt vermedi.")
 
 
 def embed_text(text: str, task_type: str = "RETRIEVAL_QUERY", max_retries: int = 2, call_timeout: int = 10) -> list[float]:
@@ -35,7 +35,7 @@ def embed_text(text: str, task_type: str = "RETRIEVAL_QUERY", max_retries: int =
             if attempt < max_retries - 1:
                 time.sleep(2 ** attempt)
                 continue
-            raise Exception("Nije moguće generisati vektor preko Gemini API-ja.")
+            raise Exception("Gemini API üzerinden vektör oluşturulamadı.")
 
 
 def embed_texts(texts: list[str], task_type: str = "RETRIEVAL_DOCUMENT", max_retries: int = 4, call_timeout: int = 15) -> list[list[float]]:
@@ -49,7 +49,7 @@ def embed_texts(texts: list[str], task_type: str = "RETRIEVAL_DOCUMENT", max_ret
                 call_timeout
             )
             if len(response.embeddings) != len(texts):
-                raise RuntimeError(f"Batch embed vratio {len(response.embeddings)} vektora za {len(texts)} tekstova.")
+                raise RuntimeError(f"Toplu gömme (batch embed) {len(texts)} metin için {len(response.embeddings)} vektör döndürdü.")
             return [e.values for e in response.embeddings]
         except Exception as e:
             is_rate_limit = "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e)

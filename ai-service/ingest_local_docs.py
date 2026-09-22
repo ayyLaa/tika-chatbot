@@ -4,7 +4,7 @@ import sys
 sys.stdout.reconfigure(encoding='utf-8')
 
 import os
-os.environ["GEMINI_API_KEY"] = os.getenv("GEMINI_API_KEY_INGEST_JSON")  # ili tvoj glavni ključ
+os.environ["GEMINI_API_KEY"] = os.getenv("GEMINI_API_KEY_INGEST_JSON")  # or your main key
 
 import uuid
 from docx import Document
@@ -30,7 +30,7 @@ def extract_docx_text(filepath: str) -> str:
 
 def ingest_local_document(title: str, text: str, doc_path: str):
     if document_already_exists(doc_path):
-        print(f"PRESKOČENO (već postoji): {title}")
+        print(f"SKIPPED (already exists): {title}")
         return
 
     document_id = str(uuid.uuid4())
@@ -49,7 +49,7 @@ def ingest_local_document(title: str, text: str, doc_path: str):
 
 
 if __name__ == "__main__":
-    # 1. Hakkımızda.docx — ima čist tekst, izvuci ga direktno
+    # 1. Hakkımızda.docx — has clean text, extract it directly
     hakkimizda_text = extract_docx_text("Hakkımızda.docx")
     ingest_local_document(
         title="Hakkımızda - TİKA (İç Doküman)",
@@ -57,8 +57,8 @@ if __name__ == "__main__":
         doc_path="internal:hakkimizda-docx"
     )
 
-    # 2. teskilat_semasi.docx — SLIKA je, nema teksta u samom fajlu.
-    # Pretvorena hijerarhija u tekst (pročitano sa dijagrama):
+    # 2. teskilat_semasi.docx — it's an IMAGE, has no text in the file itself.
+    # Hierarchy converted to text (read from the diagram):
     teskilat_text = """TİKA Teşkilat Şeması
 
 T.C. Kültür ve Turizm Bakanı, TİKA'nın bağlı olduğu üst makamdır.

@@ -8,9 +8,9 @@
       </div>
 
       <div class="flex items-center gap-4">
-        <button @click="showShareModal = true" class="flex items-center gap-1.5 text-[13px] font-medium text-[#031B39] hover:text-[#E30613] bg-[#EBF1F8] hover:bg-white px-3.5 py-1.5 rounded-lg transition shadow-2xs cursor-pointer" title="Share this chat with your department">
+        <button @click="showShareModal = true" class="flex items-center gap-1.5 text-[13px] font-medium text-[#031B39] hover:text-[#E30613] bg-[#EBF1F8] hover:bg-white px-3.5 py-1.5 rounded-lg transition shadow-2xs cursor-pointer" title="Bu sohbeti departmanınızla paylaşın">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-          <span>Share</span>
+          <span>Paylaş</span>
         </button>
 
         <div class="relative">
@@ -25,9 +25,20 @@
               <p class="text-slate-500 truncate">{{ currentUser.email }}</p>
               <div class="mt-1.5 inline-block bg-[#EBF1F8] px-2 py-0.5 rounded text-[10px] text-[#E30613] font-semibold">{{ currentUser.departmentName }}</div>
             </div>
+            <button
+                v-if="currentUser.role && currentUser.role.toUpperCase().includes('ADMIN')"
+                @click="$router.push('/admin')"
+                class="w-full text-left px-4 py-2 text-[#031B39] hover:bg-slate-50 font-medium flex items-center gap-2 cursor-pointer mt-1 border-b border-slate-100"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[#031B39]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Yönetim Konsolu
+            </button>
             <button @click="logout" class="w-full text-left px-4 py-2 text-[#E30613] hover:bg-red-50 font-medium flex items-center gap-2 cursor-pointer mt-1">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-              Sign Out
+              Çıkış Yap
             </button>
           </div>
         </div>
@@ -35,13 +46,13 @@
     </header>
 
     <div class="flex flex-1 overflow-hidden">
-      <!-- Sol Sidebar -->
+      <!-- Left Sidebar -->
       <aside class="w-64 bg-[#EBF1F8]/50 border-r border-slate-200 flex flex-col p-4 shrink-0">
         <button @click="startNewChat" class="w-full bg-[#E30613] hover:bg-[#c40510] text-white text-[14px] font-semibold py-2.5 px-4 rounded-lg flex items-center justify-between shadow-xs transition duration-200 mb-6 cursor-pointer">
-          <span>New chat</span><span class="text-lg leading-none">+</span>
+          <span>Yeni sohbet</span><span class="text-lg leading-none">+</span>
         </button>
 
-        <div class="text-[11px] font-bold text-[#031B39]/50 uppercase tracking-wider mb-3 px-1">HISTORY</div>
+        <div class="text-[11px] font-bold text-[#031B39]/50 uppercase tracking-wider mb-3 px-1">GEÇMİŞ</div>
 
         <div class="flex-1 overflow-y-auto space-y-1">
           <button v-for="chat in chatHistory" :key="chat.sessionId" @click="selectHistoryChat(chat)" :class="['w-full text-left text-[13px] px-3 py-2.5 rounded-lg truncate transition cursor-pointer', activeSessionId === chat.sessionId ? 'bg-white text-[#E30613] font-semibold border-l-4 border-[#E30613] shadow-2xs' : 'text-[#031B39] hover:bg-white/60']">
@@ -50,12 +61,12 @@
         </div>
       </aside>
 
-      <!-- Sağ Ana Sohbet Alanı -->
+      <!-- Right Main Chat Area -->
       <main class="flex-1 flex flex-col bg-[#F0F2F5] relative overflow-hidden">
         <div v-if="messages.length === 0" class="flex-1 flex flex-col items-center justify-center p-6 text-center">
           <img src="../assets/ay-yildiz.png" alt="TİKA Ay Yıldız" class="h-20 w-auto object-contain mb-0 mt-4 select-none" />
           <h1 class="text-3xl font-bold text-[#031B39] mb-2">Merhaba, {{ currentUser.firstName }}</h1>
-          <p class="text-slate-600 text-[14px] max-w-md mb-8 leading-relaxed">Ask about TİKA programs, field procedures or reporting I'll help you find it.</p>
+          <p class="text-slate-600 text-[14px] max-w-md mb-8 leading-relaxed">TİKA programları, saha prosedürleri veya raporlama hakkında sorun, bulmanıza yardımcı olayım.</p>
           <div class="flex flex-col gap-3 w-full max-w-lg">
             <button v-for="(suggestion, i) in currentDepartmentPrompts" :key="i" @click="sendSuggestedPrompt(suggestion)" class="w-full py-3 px-5 border border-[#E30613]/30 text-[#E30613] hover:bg-[#E30613] hover:text-white text-[13px] font-medium rounded-xl text-center transition duration-200 bg-white shadow-2xs cursor-pointer">
               {{ suggestion }}
@@ -65,20 +76,50 @@
 
         <div v-else class="flex-1 overflow-y-auto p-6 md:p-10 space-y-6 max-w-4xl mx-auto w-full" id="chat-container">
           <div v-for="(msg, index) in messages" :key="index" :class="['flex w-full', msg.sender === 'user' ? 'justify-end' : 'justify-start']">
+
+            <!-- AI Message -->
             <div v-if="msg.sender === 'ai'" class="flex gap-3 max-w-2xl items-start">
               <div class="w-8 h-8 rounded-full bg-[#E30613] text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 shadow-xs">AI</div>
-              <div class="space-y-2">
-                <div class="bg-[#EBF1F8] text-[#031B39] text-[14px] leading-relaxed p-4 rounded-2xl rounded-tl-none border border-slate-200/60 shadow-2xs">
+              <div class="space-y-2 w-full">
+                <div class="bg-[#EBF1F8] text-[#031B39] text-[14px] leading-relaxed p-4 rounded-2xl rounded-tl-none border border-slate-200/60 shadow-2xs whitespace-pre-wrap">
                   {{ msg.text }}
+                </div>
+
+                <!-- FEEDBACK (Like / Dislike Area) -->
+                <div v-if="!isReadOnly" class="pt-2 flex items-center justify-between text-xs text-slate-500 px-1">
+                  <span v-if="msg.feedbackGiven" class="text-[11px] font-semibold text-emerald-600">✓ Geri bildiriminiz için teşekkürler!</span>
+                  <template v-else>
+                    <span class="text-[11px] font-medium text-slate-400">Bu yanıt faydalı oldu mu?</span>
+                    <div class="flex items-center space-x-2">
+                      <button @click="sendFeedback(msg, 'LIKE')" class="p-1 hover:bg-slate-200 rounded transition cursor-pointer text-slate-600 hover:text-green-600" title="Faydalı">👍</button>
+                      <button @click="msg.showFeedbackInput = !msg.showFeedbackInput" class="p-1 hover:bg-slate-200 rounded transition cursor-pointer text-slate-600 hover:text-red-600" title="Geliştirilmeli">👎</button>
+                    </div>
+                  </template>
+                </div>
+
+                <!-- Small Text Box Opened When Disliked -->
+                <div v-if="!isReadOnly && msg.showFeedbackInput && !msg.feedbackGiven" class="pt-2 space-y-2 bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
+                  <input
+                      v-model="msg.feedbackText"
+                      type="text"
+                      placeholder="Neden memnun kalmadığınızı belirtebilirsiniz (isteğe bağlı)..."
+                      class="w-full bg-[#F0F2F5] border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-[#E30613]"
+                  />
+                  <div class="flex justify-end space-x-2">
+                    <button @click="msg.showFeedbackInput = false" class="px-2.5 py-1 text-[10px] font-semibold text-slate-500 hover:bg-slate-100 rounded cursor-pointer">İptal</button>
+                    <button @click="sendDetailedFeedback(msg)" class="px-2.5 py-1 text-[10px] font-bold bg-[#E30613] text-white rounded-lg hover:bg-[#c40510] cursor-pointer">Gönder</button>
+                  </div>
                 </div>
               </div>
             </div>
+
+            <!-- User Message -->
             <div v-else class="max-w-xl">
               <div class="bg-[#E30613] text-white text-[14px] leading-relaxed p-3.5 px-4 rounded-2xl rounded-tr-none shadow-xs font-normal">{{ msg.text }}</div>
             </div>
           </div>
 
-          <!-- Yükleniyor (Typing) Animasyonu -->
+          <!-- Loading (Typing) Animation -->
           <div v-if="isLoading" class="flex gap-3 max-w-2xl items-start mt-4">
             <div class="w-8 h-8 rounded-full bg-[#E30613] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">AI</div>
             <div class="bg-[#EBF1F8] p-4 rounded-2xl rounded-tl-none border border-slate-200/60 shadow-2xs flex space-x-1.5 items-center h-10">
@@ -91,7 +132,7 @@
 
         <div v-if="!isReadOnly" class="p-4 md:p-6 bg-[#F0F2F5] border-t border-slate-200/80 flex justify-center">
           <form @submit.prevent="sendMessage" class="max-w-4xl w-full flex items-center gap-3 bg-white border border-slate-300 rounded-xl px-4 py-2.5 shadow-xs focus-within:border-[#E30613] transition">
-            <input v-model="inputMessage" type="text" placeholder="Message TİKAI..." class="flex-1 bg-transparent text-[14px] focus:outline-none text-[#031B39] placeholder-slate-400" />
+            <input v-model="inputMessage" type="text" placeholder="TİKAI'ye mesaj yazın..." class="flex-1 bg-transparent text-[14px] focus:outline-none text-[#031B39] placeholder-slate-400" />
             <button type="submit" :disabled="!inputMessage.trim() || isLoading" class="w-8 h-8 bg-[#E30613] hover:bg-[#c40510] disabled:opacity-40 text-white rounded-lg flex items-center justify-center transition shrink-0 cursor-pointer">
               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
             </button>
@@ -145,7 +186,7 @@ const { showToast } = useToast()
 
 const isReadOnly = ref(false)
 
-const currentUser = ref({ name: '', firstName: '', email: '', departmentKey: 'it', departmentName: 'Department of Information Technology' })
+const currentUser = ref({ name: '', firstName: '', email: '', role: '', departmentKey: 'it', departmentName: 'Department of Information Technology' })
 
 const authFetch = async (url, options = {}) => {
   const response = await fetch(url, {
@@ -174,7 +215,17 @@ const fetchChatHistory = async () => {
         const mappedMessages = []
         session.messages.forEach(m => {
           mappedMessages.push({ sender: 'user', text: m.question })
-          if (m.answer) mappedMessages.push({ sender: 'ai', text: m.answer })
+          if (m.answer) {
+            mappedMessages.push({
+              id: m.id,
+              sender: 'ai',
+              text: m.answer,
+              sources: m.sources || [],
+              showFeedbackInput: false,
+              feedbackText: '',
+              feedbackGiven: false
+            })
+          }
         })
         return { sessionId: session.sessionId, title: session.title, messages: mappedMessages }
       })
@@ -247,12 +298,27 @@ onMounted(async () => {
     return
   }
 
+  let userRole = ''
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    userRole = payload.role || payload.roles || payload.authorities || ''
+  } catch (e) {
+    console.warn('Token decodiranje nije uspjelo:', e)
+  }
+
   const email = localStorage.getItem('userEmail') || ''
   const namePart = email.split('@')[0].replace('.', ' ')
   const displayName = namePart.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 
   currentUser.value = { ...currentUser.value, name: displayName || email, firstName: displayName.split(' ')[0] || email, email: email }
 
+  currentUser.value = {
+    ...currentUser.value,
+    name: displayName || email,
+    firstName: displayName.split(' ')[0] || email,
+    email: email,
+    role: userRole
+  }
   await fetchChatHistory()
   await fetchColleagues()
 
@@ -266,8 +332,18 @@ watch(() => route.query.session_id, (newId) => {
 })
 
 const departmentPrompts = {
-  'it': ['How do I search TİKA internal data programs and databases?', 'What are the cybersecurity guidelines for internal reporting?', 'How do I request software access or IT technical support?', 'Where can I find system maintenance and backup schedules?'],
-  'dis-iliskiler': ['What programs does TİKA run in Africa?', 'How do we coordinate with local embassies and partner agencies?', 'Where are TİKA\'s coordination offices located globally?', 'What is the procedure for processing international grant requests?']
+  'it': [
+    'TİKA\'nın merkez ofisi nerede bulunuyor?',
+    'TİKA hangi ülkelerde ofis bulunduruyor?',
+    'TİKA\'nın başkanı kim?',
+    'TİKA\'nın teşkilat şeması nasıldır?'
+  ],
+  'dis-iliskiler': [
+    'TİKA\'nın bakan yardımcısı kim?',
+    'TİKA hangi ülkelerde program koordinasyon ofisi bulunduruyor?',
+    'TİKA\'nın vizyonu ve misyonu nedir?',
+    'TİKA staj başvuru şartları nelerdir?'
+  ]
 }
 
 const currentDepartmentPrompts = computed(() => departmentPrompts[currentUser.value.departmentKey] || departmentPrompts['it'])
@@ -338,14 +414,22 @@ const sendMessage = async () => {
     })
 
     if (!response.ok) {
-      messages.value.push({ sender: 'ai', text: 'Sunucuya ulaşılamadı. Lütfen tekrar deneyin.' })
+      messages.value.push({ sender: 'ai', text: 'Sunucuya ulaşılamadı. Lütfen tekrar deneyin.', showFeedbackInput: false, feedbackText: '', feedbackGiven: false })
       return
     }
     const data = await response.json()
     currentSessionId.value = data.sessionId
     activeSessionId.value = data.sessionId
 
-    messages.value.push({ sender: 'ai', text: data.answer, sources: data.sources || [] })
+    messages.value.push({
+      id: data.messageId,
+      sender: 'ai',
+      text: data.answer,
+      sources: data.sources || [],
+      showFeedbackInput: false,
+      feedbackText: '',
+      feedbackGiven: false
+    })
 
     const existingChat = chatHistory.value.find(c => c.sessionId === data.sessionId)
     if (!existingChat) {
@@ -356,11 +440,34 @@ const sendMessage = async () => {
       })
     }
   } catch (error) {
-    messages.value.push({ sender: 'ai', text: 'Sunucuya ulaşılamadı. Lütfen servisleri kontrol edin.' })
+    messages.value.push({ sender: 'ai', text: 'Sunucuya ulaşılamadı. Lütfen servisleri kontrol edin.', showFeedbackInput: false, feedbackText: '', feedbackGiven: false })
   } finally {
     isLoading.value = false
     scrollToBottom()
   }
+}
+
+// Geri bildirim gönderme fonksiyonu
+const sendFeedback = async (msg, type, text = '') => {
+  msg.feedbackGiven = true
+  msg.showFeedbackInput = false
+  try {
+    await authFetch('http://localhost:8080/api/chat/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messageId: msg.id,
+        rating: type === 'LIKE' ? 1 : 0,
+        comment: text
+      })
+    })
+  } catch (error) {
+    console.error('Feedback gönderilemedi:', error)
+  }
+}
+
+const sendDetailedFeedback = (msg) => {
+  sendFeedback(msg, 'DISLIKE', msg.feedbackText)
 }
 
 const sendShareEmail = async () => {

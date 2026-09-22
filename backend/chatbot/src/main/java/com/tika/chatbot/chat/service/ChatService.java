@@ -43,13 +43,13 @@ public class ChatService {
         UUID actualSessionId = sessionId;
         if (sessionId != null) {
             ChatSession session = sessionRepository.findById(sessionId)
-                    .orElseThrow(() -> new RuntimeException("Sesija ne postoji.")); // Dodano () ->
+                    .orElseThrow(() -> new RuntimeException("Oturum mevcut değil.")); // Added () ->
 
             if (!session.getUserId().equals(userId)) {
-                throw new RuntimeException("Nemate dozvolu za nastavak ovog razgovora.");
+                throw new RuntimeException("Bu görüşmeye devam etme izniniz yok.");
             }
         } else {
-            // Kreiranje nove sesije ako je sessionId null
+            // Create a new session if sessionId is null
             ChatSession session = new ChatSession();
             session.setUserId(userId);
             session.setTitle(question.length() > 50 ? question.substring(0, 50) : question);
@@ -93,20 +93,21 @@ public class ChatService {
                 .toList()
                 : List.of();
 
-        return new ChatResponse(actualSessionId, response.answer(), sources, response.responseTimeMs(), response.tokensUsed());
+        return new ChatResponse(actualSessionId, message.getId(), response.answer(), sources, response.responseTimeMs(), response.tokensUsed());
     }
 
     public List<ChatSessionDTO> getUserChatHistory(UUID userId) {
-        // 1. Povuci SVE sesije i SVE njihove poruke u SAMO JEDNOM upitu bazi!
+        // 1. Fetch ALL sessions and ALL their messages in a SINGLE database query!
         List<ChatSession> sessions = sessionRepository.findByUserIdWithMessages(userId);
 
-        // 2. Pretvori (mapiraj) bazu podataka u DTO objekte za frontend
+        // 2. Convert (map) the database entities into DTO objects for the frontend
         return sessions.stream().map(session -> {
 
-            // Pošto smo koristili JOIN FETCH, session.getMessages() ne pravi novi upit u bazu,
-            // već koristi podatke koje je već povukao.
+            // Since we used JOIN FETCH, session.getMessages() doesn't trigger a new database query,
+            // it uses the data that was already fetched.
             List<MessageDTO> messageDTOs = session.getMessages().stream()
                     .map(m -> new MessageDTO(
+                            m.getId(),
                             m.getQuestion(),
                             m.getAnswer(),
                             m.getCreatedAt()

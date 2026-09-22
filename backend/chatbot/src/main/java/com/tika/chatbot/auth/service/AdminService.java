@@ -85,7 +85,7 @@ public class AdminService {
 
     public void approvePasswordReset(UUID requestId, UUID adminId) {
         PasswordResetRequest req = resetRequestRepository.findById(requestId)
-                .orElseThrow(() -> new UserNotFoundException("Zahtjev ne postoji."));
+                .orElseThrow(() -> new UserNotFoundException("Talep mevcut değil."));
 
         String token = UUID.randomUUID().toString();
         req.setStatus("approved");
@@ -107,8 +107,10 @@ public class AdminService {
         resetRequestRepository.save(req);
     }
 
-    public List<PasswordResetRequest> getPendingResetRequests() {
-        return resetRequestRepository.findByStatusOrderByRequestedAtDesc("pending");
+    public List<PasswordResetRequestDto> getPendingPasswordRequests() {
+        return resetRequestRepository.findPendingWithUserInfo().stream()
+                .map(row -> new PasswordResetRequestDto(row[0].toString(), (String) row[1], (String) row[2]))
+                .toList();
     }
 
     public List<UserSummaryDto> getAllUsers(String roleFilter) {
@@ -118,16 +120,16 @@ public class AdminService {
         }
 
         return stream.map(u -> {
-            // Tražimo posljednji login za ovog korisnika
+            // Look up the last login for this user
             String lastLoginTime = loginHistoryRepository
                     .findFirstByUserIdOrderByDateTimeDesc(u.getId())
                     .map(login -> login.getDateTime().toString())
-                    .orElse("Belirsiz"); // Ako se nikad nije logovao
+                    .orElse("Belirsiz"); // If they never logged in
 
             return new UserSummaryDto(
                     u.getId(), u.getFullName(), u.getUsername(), u.getEmail(),
                     u.getDepartment(), u.getUserRole(), u.getIsActive(),
-                    lastLoginTime // <-- Šaljemo taj datum u Vue.js
+                    lastLoginTime // <-- Sending that date to Vue.js
             );
         }).toList();
     }
@@ -156,13 +158,15 @@ public class AdminService {
         long activeUsers = messageRepository.countActiveUsersLast30Days();
         Double satisfaction = messageFeedbackRepository.satisfactionPercentage();
 
+        Double finalSatisfaction = satisfaction != null ? satisfaction : 0.0;
+
         List<DailyUsageDto> daily = messageRepository.dailyMessageCountsLast14Days().stream()
                 .map(row -> new DailyUsageDto((String) row[0], ((Number) row[1]).longValue()))
                 .toList();
 
         Double avgTimeSeconds = avgTime != null ? avgTime / 1000.0 : null;
 
-        return new AnalyticsResponse(tokens, avgTimeSeconds, activeUsers, satisfaction, daily);
+        return new AnalyticsResponse(tokens, avgTimeSeconds, activeUsers, finalSatisfaction, daily);
     }
 
     public List<QaHistoryDto> getQaHistory() {

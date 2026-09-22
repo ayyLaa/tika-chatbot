@@ -16,7 +16,7 @@ INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY")
 
 def verify_internal_key(x_internal_key: str = Header(None)):
     if x_internal_key != INTERNAL_API_KEY:
-        raise HTTPException(status_code=403, detail="Forbidden")
+        raise HTTPException(status_code=403, detail="Erişim reddedildi")
 
 @app.get("/health")
 def health():
@@ -27,13 +27,13 @@ def query(request: QueryRequest):
     start = time.time()
     results = search_similar_chunks(request.question, request.top_k)
 
-    # similarity threshold filter (dio 9 ispod)
+    # similarity threshold filter (part 9 below)
     relevant_results = [r for r in results if r[4] > 0.6]
 
     if not relevant_results:
         elapsed = int((time.time() - start) * 1000)
         return QueryResponse(
-            answer="I don't have enough information in the available documents to answer this question.",
+            answer="Elimdeki belgelere göre bu sorunun yanıtı belirlenemiyor.",
             sources=[],
             response_time_ms=elapsed
         )

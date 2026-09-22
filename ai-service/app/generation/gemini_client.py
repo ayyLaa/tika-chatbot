@@ -13,25 +13,25 @@ def _call_with_timeout(fn, timeout_seconds: int):
     try:
         return future.result(timeout=timeout_seconds)
     except FutureTimeoutError:
-        raise Exception(f"Gemini poziv nije odgovorio u roku od {timeout_seconds}s.")
+        raise Exception(f"Gemini çağrısı {timeout_seconds}s içinde yanıt vermedi.")
 
 
 def generate_answer(prompt: str) -> str:
     try:
         response = _call_with_timeout(
-            lambda: client.models.generate_content(model='gemini-2.5-flash', contents=prompt),
+            lambda: client.models.generate_content(model='gemini-3.6-flash', contents=prompt),
             25
         )
         return response.text
     except Exception as e:
-        raise Exception(f"Greška pri komunikaciji sa Gemini API: {str(e)}")
+        raise Exception(f"Gemini API ile iletişim hatası: {str(e)}")
 
 
 def generate_answer_with_usage(prompt: str, max_retries: int = 2, call_timeout: int = 25) -> tuple[str, int | None]:
     for attempt in range(max_retries):
         try:
             response = _call_with_timeout(
-                lambda: client.models.generate_content(model='gemini-2.5-flash', contents=prompt),
+                lambda: client.models.generate_content(model='gemini-3.6-flash', contents=prompt),
                 call_timeout
             )
             tokens = response.usage_metadata.total_token_count if response.usage_metadata else None
@@ -42,4 +42,4 @@ def generate_answer_with_usage(prompt: str, max_retries: int = 2, call_timeout: 
                 wait = 30 if is_rate_limit else 2 ** attempt
                 time.sleep(wait)
                 continue
-            raise Exception(f"Gemini greška nakon {max_retries} pokušaja: {str(e)}")
+            raise Exception(f"{max_retries} denemeden sonra Gemini hatası: {str(e)}")

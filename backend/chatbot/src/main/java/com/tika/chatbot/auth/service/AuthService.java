@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.tika.chatbot.auth.dto.InviteDetailsResponse;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -41,10 +42,10 @@ public class AuthService {
 
     public void acceptInvite(String token, String fullName, String password, String phoneNumber, String department) {
         UserInvite invite = inviteRepository.findByInviteTokenAndStatus(token, "pending")
-                .orElseThrow(() -> new InvalidTokenException("Nevažeći ili istekao poziv."));
+                .orElseThrow(() -> new InvalidTokenException("Geçersiz veya süresi dolmuş davet."));
 
         if (invite.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new InvalidTokenException("Poziv je istekao.");
+            throw new InvalidTokenException("Davetin süresi doldu.");
         }
 
         User user = new User();
@@ -115,27 +116,49 @@ public class AuthService {
         return new AuthResponse(token, user.getFullName(), user.getEmail(), user.getUserRole());
     }
 
+
     @Transactional
     public void requestPasswordReset(String email) {
         userRepository.findByEmail(email).ifPresent(user -> {
             PasswordResetRequest req = new PasswordResetRequest();
+
+
             req.setUserId(user.getId());
+            req.setStatus("pending");
+
+
             resetRequestRepository.save(req);
 
         });
     }
 
     @Transactional
+    public void approvePasswordReset(UUID requestId, UUID adminId) throws Exception {
+        PasswordResetRequest req = resetRequestRepository.findById(requestId).orElseThrow();
+
+        String token = UUID.randomUUID().toString();
+        req.setResetToken(token);
+        req.setTokenExpires(LocalDateTime.now().plusHours(1));
+        req.setStatus("approved");
+        req.setReviewedBy(adminId);
+        req.setReviewedAt(LocalDateTime.now());
+        resetRequestRepository.save(req);
+
+        User user = userRepository.findById(req.getUserId()).orElseThrow();
+        emailService.sendPasswordResetEmail(user.getEmail(), token);
+    }
+
+    @Transactional
     public void resetPassword(String token, String newPassword) {
         PasswordResetRequest req = resetRequestRepository.findByResetToken(token)
-                .orElseThrow(() -> new InvalidTokenException("Nevažeći token za reset lozinke."));
+                .orElseThrow(() -> new InvalidTokenException("Şifre sıfırlama için geçersiz token."));
 
         if (!"approved".equals(req.getStatus())) {
-            throw new InvalidTokenException("Token je već iskorišten ili nije odobren.");
+            throw new InvalidTokenException("Token zaten kullanıldı veya onaylanmadı.");
         }
 
         if (req.getTokenExpires().isBefore(LocalDateTime.now())) {
-            throw new InvalidTokenException("Token je istekao. Zatražite novi reset lozinke.");
+            throw new InvalidTokenException("Token'ın süresi doldu. Yeni bir şifre sıfırlama talep edin.");
         }
 
         User user = userRepository.findById(req.getUserId())
@@ -150,7 +173,7 @@ public class AuthService {
 
     public InviteDetailsResponse getInviteDetails(String token) {
         UserInvite invite = inviteRepository.findByInviteTokenAndStatus(token, "pending")
-                .orElseThrow(() -> new InvalidTokenException("Nevažeći ili istekao poziv."));
+                .orElseThrow(() -> new InvalidTokenException("Geçersiz veya süresi dolmuş davet."));
         return new InviteDetailsResponse(invite.getEmail(), invite.getInvitedRole());
     }
 }

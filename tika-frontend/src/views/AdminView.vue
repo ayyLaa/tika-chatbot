@@ -32,6 +32,17 @@
               Department of Information Technology
             </div>
           </div>
+
+          <!-- Chat'e Geçiş Butonu -->
+          <div class="border-t border-gray-100 p-2">
+            <button @click="$router.push('/chat')" class="w-full text-left px-3 py-2 text-[#031B39] font-semibold hover:bg-slate-100 rounded-lg flex items-center space-x-2 transition cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[#E30613]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              <span>Go to Chat</span>
+            </button>
+          </div>
+
           <div class="border-t border-gray-100 p-2">
             <button @click="handleLogout" class="w-full text-left px-3 py-2 text-red-600 font-semibold hover:bg-red-50 rounded-lg flex items-center space-x-2 transition cursor-pointer">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 stroke-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -64,6 +75,12 @@
             <button @click="activeTab = 'analytics'" :class="activeTab === 'analytics' ? 'bg-[#1F2937] text-white' : 'text-gray-700 hover:bg-gray-300'" class="w-full text-left px-3 py-2 rounded text-sm font-semibold flex justify-between items-center transition cursor-pointer">
               <span>Analitik & Loglar</span>
               <span class="text-xs opacity-75">{{ monthlyTokens }}</span>
+            </button>
+
+            <!-- FEEDBACK SEKMESİ -->
+            <button @click="activeTab = 'feedbacks'" :class="activeTab === 'feedbacks' ? 'bg-[#1F2937] text-white' : 'text-gray-700 hover:bg-gray-300'" class="w-full text-left px-3 py-2 rounded text-sm font-semibold flex justify-between items-center transition cursor-pointer">
+              <span>Feedback Alanı</span>
+              <span class="text-xs opacity-75 bg-[#E30613] text-white px-1.5 py-0.5 rounded-full">{{ feedbacks.length }}</span>
             </button>
           </nav>
         </div>
@@ -107,7 +124,7 @@
             </div>
             <div class="bg-[#E30613] text-white p-4 rounded shadow-sm">
               <div class="text-xs font-bold tracking-wider opacity-90">BEKLEYEN ŞİFRE TALEBİ</div>
-              <div class="text-3xl font-black mt-1">0</div>
+              <div class="text-3xl font-black mt-1">{{ passwordRequests.length }}</div>
             </div>
           </div>
 
@@ -169,22 +186,21 @@
               </div>
             </div>
 
-            <!-- Sağ Taraf: Şifre Talepleri & Bilgi Havuzu -->
+            <!-- Sağ Taraf: Şifre Sıfırlama Talepleri -->
             <div class="space-y-6">
               <div class="bg-gray-100 p-4 rounded border border-gray-200 space-y-3">
-                <span class="text-[10px] font-bold text-gray-400 tracking-wider uppercase">BİLGİ HAVUZU ERİŞİMİ</span>
-                <div class="space-y-2 text-xs font-semibold">
-                  <div class="flex justify-between items-center">
-                    <span>İnsan Kaynakları</span>
-                    <input type="checkbox" checked class="accent-red-600 w-4 h-4 cursor-pointer" />
+                <span class="text-[10px] font-bold text-gray-400 tracking-wider uppercase">ŞİFRE SIFIRLAMA TALEPLERİ</span>
+                <div class="space-y-2">
+                  <div v-for="req in passwordRequests" :key="req.requestId" class="bg-white p-2.5 rounded border border-gray-200 text-xs">
+                    <div class="font-bold text-gray-900">{{ req.fullName }}</div>
+                    <div class="text-gray-500 text-[10px] mb-2">{{ req.email }}</div>
+                    <div class="flex gap-2">
+                      <button @click="approveReset(req.requestId)" class="flex-1 py-1 bg-[#031B39] text-white rounded text-[10px] font-bold hover:bg-slate-800 cursor-pointer">Onayla</button>
+                      <button @click="rejectReset(req.requestId)" class="flex-1 py-1 border border-gray-300 text-gray-600 rounded text-[10px] font-bold hover:bg-gray-50 cursor-pointer">Reddet</button>
+                    </div>
                   </div>
-                  <div class="flex justify-between items-center">
-                    <span>Mali İşler</span>
-                    <input type="checkbox" checked class="accent-red-600 w-4 h-4 cursor-pointer" />
-                  </div>
-                  <div class="flex justify-between items-center">
-                    <span>Genel Arşiv</span>
-                    <input type="checkbox" checked class="accent-red-600 w-4 h-4 cursor-pointer" />
+                  <div v-if="passwordRequests.length === 0" class="text-center text-gray-400 text-[11px] py-2">
+                    Bekleyen talep yok.
                   </div>
                 </div>
               </div>
@@ -360,7 +376,97 @@
             </div>
           </div>
         </div>
+
+        <!-- FEEDBACK ALANI TAB'İ (MODAL TASARIMLI) -->
+        <div v-else-if="activeTab === 'feedbacks'" class="space-y-6">
+          <div class="flex justify-between items-center">
+            <div>
+              <span class="text-[11px] font-bold text-red-600 tracking-wider uppercase">KULLANICI DEĞERLENDİRMELERİ</span>
+              <h1 class="text-3xl font-extrabold text-black">Feedback Alanı</h1>
+            </div>
+          </div>
+
+          <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-gray-50 border-b border-gray-200 text-gray-500 font-bold uppercase tracking-wider">
+              <tr>
+                <th class="p-4">TARİH / ZAMAN</th>
+                <th class="p-4">KULLANICI</th>
+                <th class="p-4">İLGİLİ MESAJ / CEVAP ÖZETİ</th>
+                <th class="p-4">KULLANICI AÇIKLAMASI (NEDENİ)</th>
+                <th class="p-4 text-right">İŞLEM</th>
+              </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 font-medium text-gray-800">
+              <tr v-for="(fb, idx) in feedbacks" :key="idx" class="hover:bg-gray-50/80 transition">
+                <td class="p-4 text-gray-500 font-mono text-[11px]">{{ fb.time || 'Şimdi' }}</td>
+                <td class="p-4 font-bold text-gray-900">{{ fb.user || 'Personel' }}</td>
+                <td class="p-4 text-gray-600 max-w-xs truncate">
+                  {{ fb.answerText || fb.answer || 'Belirtilmemiş' }}
+                </td>
+                <td class="p-4 text-[#E30613] font-semibold">
+                  <span class="bg-red-50 px-2.5 py-1 rounded-md border border-red-100">{{ fb.text || 'Açıklama girilmedi (Sadece 👎 verildi)' }}</span>
+                </td>
+                <td class="p-4 text-right">
+                  <button @click="openFeedbackModal(fb)" class="px-3 py-1.5 bg-slate-100 hover:bg-[#031B39] hover:text-white text-slate-700 rounded-lg text-[11px] font-semibold transition cursor-pointer shadow-2xs">
+                    Detayı Gör
+                  </button>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+            <div v-if="feedbacks.length === 0" class="p-8 text-center text-gray-400 text-xs">
+              Henüz olumsuz bir geri bildirim bulunmuyor.
+            </div>
+          </div>
+        </div>
       </main>
+    </div>
+
+    <!-- DETAY MODAL (AÇILIR PENCERE) -->
+    <div v-if="showFeedbackModalState" class="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 space-y-5 border border-slate-100 relative">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <span class="text-[10px] font-bold text-red-600 uppercase tracking-wider">GERİ BİLDİRİM DETAYI</span>
+            <h2 class="text-lg font-extrabold text-[#031B39]">Kullanıcı Yanıtı ve Şikayeti</h2>
+          </div>
+          <button @click="showFeedbackModalState = false" class="text-slate-400 hover:text-slate-600 text-lg cursor-pointer p-1">✕</button>
+        </div>
+
+        <div class="space-y-4 text-xs">
+          <div class="grid grid-cols-2 gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+            <div>
+              <span class="text-slate-400 font-semibold block text-[10px] uppercase">Kullanıcı</span>
+              <span class="font-bold text-slate-800 text-sm">{{ selectedFeedback?.user }}</span>
+            </div>
+            <div>
+              <span class="text-slate-400 font-semibold block text-[10px] uppercase">Zaman</span>
+              <span class="font-mono font-semibold text-slate-800 text-sm">{{ selectedFeedback?.time }}</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 mb-1.5 uppercase tracking-wider text-[10px]">Kullanıcının Açıklaması (Gerekçe):</label>
+            <div class="p-3 bg-red-50 text-[#E30613] font-semibold rounded-xl border border-red-100 text-xs">
+              {{ selectedFeedback?.text || 'Açıklama girilmedi (Sadece 👎 verildi)' }}
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-700 mb-1.5 uppercase tracking-wider text-[10px]">Asistanın İlgili Cevabı (Tam Metin):</label>
+            <div class="p-4 bg-[#F0F2F5] text-[#031B39] rounded-xl border border-slate-200 text-xs leading-relaxed max-h-60 overflow-y-auto whitespace-pre-wrap font-sans">
+              {{ selectedFeedback?.answerText || selectedFeedback?.answer || 'Belirtilmemiş' }}
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end pt-2">
+          <button @click="showFeedbackModalState = false" class="px-4 py-2 bg-[#031B39] text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition cursor-pointer">
+            Kapat
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- YENİ KULLANICI EKLE MODAL -->
@@ -434,7 +540,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from '../composables/useToast'
 
@@ -455,11 +561,22 @@ const showAddUserModal = ref(false)
 const newUserEmail = ref('')
 const newUserRole = ref('User')
 
+// -- FEEDBACK MODAL STATE --
+const showFeedbackModalState = ref(false)
+const selectedFeedback = ref(null)
+
+const openFeedbackModal = (fb) => {
+  selectedFeedback.value = fb
+  showFeedbackModalState.value = true
+}
+
 // -- VERİ DURUMLARI (STATE) --
 const users = ref([])
 const documents = ref([])
 const riskFlags = ref([])
 const selectedFlag = ref(null)
+const feedbacks = ref([])
+const passwordRequests = ref([])
 
 // Analitik İstatistikleri
 const monthlyTokens = ref('0')
@@ -472,6 +589,8 @@ const indexedDocsCount = ref(0)
 const pendingDocsCount = ref(0)
 const failedDocsCount = ref(0)
 const totalChunksCount = ref(0)
+
+let pollInterval = null
 
 // Computed
 const adminCount = computed(() => users.value.filter(u => u.role === 'Admin').length)
@@ -592,6 +711,71 @@ const fetchRiskFlags = async () => {
   }
 }
 
+const fetchFeedbacks = async () => {
+  try {
+    const response = await fetch('http://localhost:8080/api/chat/feedbacks', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (response.ok) {
+      const data = await response.json()
+      feedbacks.value = data
+    }
+  } catch (error) {
+    console.warn("Feedbackler çekilemedi, örnek geçici veri gösteriliyor.")
+    feedbacks.value = [
+
+    ]
+  }
+}
+
+const fetchPendingPasswordRequests = async () => {
+  try {
+    const response = await fetch('http://localhost:8080/api/admin/password-reset-requests', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (response.ok) {
+      passwordRequests.value = await response.json()
+    }
+  } catch (error) {
+    console.error("Şifre talepleri çekilemedi:", error)
+  }
+}
+
+const approveReset = async (requestId) => {
+  try {
+    const response = await fetch(`http://localhost:8080/api/admin/password-reset-requests/${requestId}/approve`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (response.ok) {
+      showToast('Şifre sıfırlama onaylandı, kullanıcıya e-posta gönderildi.', 'success')
+      fetchPendingPasswordRequests()
+    } else {
+      const data = await response.json().catch(() => null)
+      showToast(data?.message || 'İşlem başarısız oldu.', 'error')
+    }
+  } catch (e) {
+    showToast('Sunucuya ulaşılamadı.', 'error')
+  }
+}
+
+const rejectReset = async (requestId) => {
+  try {
+    const response = await fetch(`http://localhost:8080/api/admin/password-reset-requests/${requestId}/reject`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+    if (response.ok) {
+      showToast('Talep reddedildi.', 'success')
+      fetchPendingPasswordRequests()
+    } else {
+      showToast('İşlem başarısız oldu.', 'error')
+    }
+  } catch (e) {
+    showToast('Sunucuya ulaşılamadı.', 'error')
+  }
+}
+
 const reviewFlag = async (messageId, isRisky) => {
   try {
     const response = await fetch(`http://localhost:8080/api/admin/risk-flags/${messageId}/review`, {
@@ -640,6 +824,20 @@ onMounted(() => {
   fetchDocuments()
   fetchAnalytics()
   fetchRiskFlags()
+  fetchFeedbacks()
+  fetchPendingPasswordRequests()
+
+  pollInterval = setInterval(() => {
+    fetchUsers()
+    fetchAnalytics()
+    fetchRiskFlags()
+    fetchFeedbacks()
+    fetchPendingPasswordRequests()
+  }, 15000) // svakih 15 sekundi
+})
+
+onUnmounted(() => {
+  if (pollInterval) clearInterval(pollInterval)
 })
 
 const handleLogout = () => {

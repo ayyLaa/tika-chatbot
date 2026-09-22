@@ -21,16 +21,18 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(request));
     }
 
+    public record ForgotPasswordRequest(String email) {}
+    public record ResetPasswordRequest(String token, String newPassword) {}
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<Void> forgotPassword(@RequestParam String email) {
-        authService.requestPasswordReset(email);
+    public ResponseEntity<Void> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        authService.requestPasswordReset(request.email());
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<Void> resetPassword(@RequestParam String token, @RequestParam String newPassword) {
-        authService.resetPassword(token, newPassword);
+    public ResponseEntity<Void> resetPassword(@RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.token(), request.newPassword());
         return ResponseEntity.ok().build();
     }
 
@@ -48,8 +50,8 @@ public class AuthController {
 
     @GetMapping("/accept-invite")
     public ResponseEntity<String> acceptInvitePage(@RequestParam("token") String token) {
-    // Burada token'ın geçerliliğini kontrol edebilir, 
-    // kullanıcıya şifre belirleme ekranı sunabilir veya başarılı mesajı dönebilirsiniz.
+    // Here you can validate the token,
+    // present the user with a password setup screen, or return a success message.
     
         String htmlResponse = "<html><body><h2>Davet başarıyla onaylandı!</h2><p>Token: " + token + "</p></body></html>";
         return ResponseEntity.ok().body(htmlResponse);

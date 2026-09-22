@@ -33,5 +33,16 @@ server:
     context-path: /api
 
 mail:
-  username: test@test.com
-  password: testpassword
+  host: sandbox.smtp.mailtrap.io
+  port: 587
+  username: ${MAIL_USERNAME}
+  password: ${MAIL_PASSWORD}
+  properties:
+    mail:
+      smtp:
+        auth: true
+        starttls:
+          enable: true
+          required: true
+        ssl:
+            trust: sandbox.smtp.mailtrap.io

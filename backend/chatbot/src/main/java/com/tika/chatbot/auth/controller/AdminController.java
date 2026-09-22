@@ -43,8 +43,8 @@ public class AdminController {
     }
 
     @GetMapping("/password-reset-requests")
-    public ResponseEntity<List<PasswordResetRequest>> getPendingResets() {
-        return ResponseEntity.ok(adminService.getPendingResetRequests());
+    public ResponseEntity<List<PasswordResetRequestDto>> getPendingResets() {
+        return ResponseEntity.ok(adminService.getPendingPasswordRequests());
     }
 
     @PostMapping("/password-reset-requests/{requestId}/approve")

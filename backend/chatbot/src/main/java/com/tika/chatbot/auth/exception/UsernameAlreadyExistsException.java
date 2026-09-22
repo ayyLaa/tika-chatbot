@@ -3,6 +3,6 @@ package com.tika.chatbot.auth.exception;
 public class UsernameAlreadyExistsException extends RuntimeException {
     public UsernameAlreadyExistsException(String username) {
 
-        super("User with username " + username + " already exists");
+        super(username + " kullanıcı adına sahip bir kullanıcı zaten mevcut.");
     }
 }

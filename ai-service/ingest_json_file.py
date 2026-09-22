@@ -10,7 +10,7 @@ import sys
 
 import os
 os.environ["GEMINI_API_KEY"] = os.getenv("GEMINI_API_KEY_INGEST_JSON")
-# Forsiranje UTF-8 kodiranja za terminal
+# Force UTF-8 encoding for terminal
 sys.stdout.reconfigure(encoding='utf-8')
 
 from app.ingestion.pipeline import process_document
@@ -29,12 +29,12 @@ def ingest_json_file(filepath: str, doc_type: str = "web"):
     with open(filepath, "r", encoding="utf-8") as f:
         records = json.load(f)
 
-    for record in tqdm(records, desc="Punjenje baze", unit="dok"):
+    for record in tqdm(records, desc="Filling database", unit="doc"):
         title = record.get("title", "Untitled")
         source_url = record.get("url")
         main_text = record.get("content", "")
 
-        # 1. Spašavanje glavnog teksta sa web stranice
+        # 1. Save main text from the web page
         if main_text.strip() and not document_already_exists(source_url or "json_import"):
             document_id = str(uuid.uuid4())
             conn = get_connection()
@@ -49,11 +49,11 @@ def ingest_json_file(filepath: str, doc_type: str = "web"):
 
             process_document(document_id, main_text, source_url=source_url)
             print(f"OK (Web): {title}")
-            time.sleep(10) # Pauza za Gemini API
+            time.sleep(10) # Pause for Gemini API
         elif main_text.strip():
-            print(f"PRESKOČENO (već postoji): {title}")
+            print(f"SKIPPED (already exists): {title}")
 
-        # 2. Spašavanje tekstova iz pripadajućih PDF-ova
+        # 2. Save texts from associated PDFs
         pdf_contents = record.get("pdf_contents", [])
         for pdf in pdf_contents:
             pdf_text = pdf.get("text", "")
@@ -77,7 +77,7 @@ def ingest_json_file(filepath: str, doc_type: str = "web"):
                 print(f"OK (PDF): {pdf_url}")
                 time.sleep(2)
             elif pdf_text.strip():
-                print(f"PRESKOČENO (već postoji): {pdf_url}")
+                print(f"SKIPPED (already exists): {pdf_url}")
 
 
 if __name__ == "__main__":

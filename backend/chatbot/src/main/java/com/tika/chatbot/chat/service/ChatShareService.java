@@ -34,25 +34,25 @@ public class ChatShareService {
 
 
         ChatSession session = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new RuntimeException("Sesija ne postoji."));
+                .orElseThrow(() -> new RuntimeException("Oturum mevcut değil."));
 
         User owner = userRepository.findById(session.getUserId())
-                .orElseThrow(() -> new RuntimeException("Vlasnik sesije ne postoji."));
+                .orElseThrow(() -> new RuntimeException("Oturum sahibi mevcut değil."));
 
         if (!owner.getEmail().equalsIgnoreCase(senderEmail)) {
-            throw new RuntimeException("Samo vlasnik razgovora može ga podijeliti.");
+            throw new RuntimeException("Görüşmeyi yalnızca sahibi paylaşabilir.");
         }
 
         User colleague = userRepository.findByEmail(colleagueEmail)
-                .orElseThrow(() -> new UserNotFoundException("Kolega nije pronađen."));
+                .orElseThrow(() -> new UserNotFoundException("Meslektaş bulunamadı."));
 
 
 
 
         SharedChat share = new SharedChat();
         share.setSessionId(sessionId);
-        share.setSenderEmail(senderEmail); // Upisujemo email pošiljaoca
-        share.setTargetUserEmail(colleague.getEmail()); // Upisujemo email primaoca
+        share.setSenderEmail(senderEmail); // Store the sender's email
+        share.setTargetUserEmail(colleague.getEmail()); // Store the recipient's email
         share.setNote(note);
         shareRepository.save(share);
 
@@ -60,19 +60,19 @@ public class ChatShareService {
         emailService.sendChatShareEmail(colleague.getEmail(), senderEmail, chatLink, note);
     }
 
-    // provjera pristupa — ovo pozivaš PRIJE nego vratiš poruke sesije
+    // access check — call this BEFORE returning the session's messages
     public boolean canAccess(UUID sessionId, String userEmail) {
         ChatSession session = sessionRepository.findById(sessionId).orElse(null);
         if (session == null) return false;
 
-        // Ako je vlasnik sesije
+        // If they are the session owner
         User owner = userRepository.findById(session.getUserId()).orElse(null);
         if (owner != null && owner.getEmail().equalsIgnoreCase(userEmail)) {
             return true;
         }
 
-        // Ili ako je chat podijeljen sa ovim emailom u 'shared_chats' tabeli
-        return shareRepository.existsBySessionIdAndTargetUserEmail(sessionId, userEmail); // dijeljeno s njim
+        // Or if the chat is shared with this email in the 'shared_chats' table
+        return shareRepository.existsBySessionIdAndTargetUserEmail(sessionId, userEmail); // shared with them
     }
 
     public boolean isOwner(UUID sessionId, UUID userId) {

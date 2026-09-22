@@ -55,9 +55,9 @@ rendering markdown formatting.
 
 Format:
 
-Answer: [Your concise and accurate answer, based only on context.]
+Cevap: [Your concise and accurate answer, based only on context.]
 
-Source: [Relevant excerpt or paraphrase from the source] (Internal Document / Official Website)
+Kaynak: [Relevant excerpt or paraphrase from the source] (Internal Document / Official Website)
 
 If a URL is available in the context for a web-sourced answer, include it after the source
 type, e.g. "(Official Website: https://tika.gov.tr/...)" — always use the exact URL as given

@@ -11,7 +11,7 @@ public class DataSeeder implements CommandLineRunner {
     private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
 
-    // Şifre şifreleyiciyi (PasswordEncoder) sisteme dahil ediyoruz
+    // We wire the password encoder (PasswordEncoder) into the system
     public DataSeeder(JdbcTemplate jdbcTemplate, PasswordEncoder passwordEncoder) {
         this.jdbcTemplate = jdbcTemplate;
         this.passwordEncoder = passwordEncoder;
@@ -20,25 +20,25 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         String email = "admin@tika.gov.tr";
-        // Şifreyi Java'nın kendi güvenlik formatına çeviriyoruz
+        // We convert the password to Java's own secure format
         String encodedPassword = passwordEncoder.encode("admin123");
 
-        // Hesap var mı diye bak
+        // Check whether the account exists
         String checkSql = "SELECT count(*) FROM users WHERE email = ?";
         Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, email);
 
         System.out.println("\n=========================================================");
         if (count != null && count > 0) {
-            // Eğer hesap zaten varsa, şifresini zorla admin123 olarak güncelle
+            // If the account already exists, forcibly update its password to admin123
             String updateSql = "UPDATE users SET password_hash = ? WHERE email = ?";
             jdbcTemplate.update(updateSql, encodedPassword, email);
-            System.out.println("✅ ADMIN HESABI ZATEN VARDI, SIFRE 'admin123' OLARAK GUNCELLEDI! ✅");
+            System.out.println("✅ ADMIN ACCOUNT ALREADY EXISTED, PASSWORD UPDATED TO 'admin123'! ✅");
         } else {
-            // Hesap yoksa sıfırdan oluştur
+            // If the account doesn't exist, create it from scratch
             String insertSql = "INSERT INTO users (full_name, username, email, password_hash, department, user_role, is_active, email_verified) " +
                                "VALUES ('Sistem Yöneticisi', 'admin', ?, ?, 'IT', 'admin', true, true)";
             jdbcTemplate.update(insertSql, email, encodedPassword);
-            System.out.println("✅ ADMIN HESABI YOKTU, OLUSTURULDU VE SIFRE 'admin123' YAPILDI! ✅");
+            System.out.println("✅ ADMIN ACCOUNT DID NOT EXIST, CREATED AND PASSWORD SET TO 'admin123'! ✅");
         }
         System.out.println("=========================================================\n");
     }

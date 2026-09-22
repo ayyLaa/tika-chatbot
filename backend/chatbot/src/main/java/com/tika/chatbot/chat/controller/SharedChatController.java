@@ -18,13 +18,13 @@ public class SharedChatController {
     private final ChatShareService chatShareService;
     private final MessageRepository messageRepository;
 
-    // Injektujemo ChatShareService umjesto direktnog repozitorija
+    // Injecting ChatShareService instead of the repository directly
     public SharedChatController(ChatShareService chatShareService, MessageRepository messageRepository) {
         this.chatShareService = chatShareService;
         this.messageRepository = messageRepository;
     }
 
-    // 1. ENDPOINT ZA SLANJE CHATA (Kreira link i šalje mail preko servisa)
+    // 1. ENDPOINT FOR SENDING THE CHAT (Creates a link and sends an email via the service)
     @PostMapping("/share-in-app")
     public ResponseEntity<?> shareChat(@RequestBody Map<String, String> request, @AuthenticationPrincipal CustomUserDetails user) {
         if (user == null) {
@@ -35,18 +35,18 @@ public class SharedChatController {
         String recipientEmail = request.get("recipient_email");
         String note = request.get("note");
 
-        // Pozivamo servis koji smo definisali
+        // Calling the service we defined
         chatShareService.shareChat(sessionId, user.getEmail(), recipientEmail, note);
 
         return ResponseEntity.ok(Map.of("status", "success"));
     }
 
-    // 2. ENDPOINT ZA OTVARANJE TUĐEG CHATA (Sigurnosna provjera + Vraćanje poruka)
+    // 2. ENDPOINT FOR OPENING SOMEONE ELSE'S CHAT (Security check + returning messages)
     @GetMapping("/shared/{sessionId}")
     public ResponseEntity<?> getSharedChat(@PathVariable UUID sessionId,
                                            @AuthenticationPrincipal CustomUserDetails user) {
         if (user == null) {
-            return ResponseEntity.status(401).build();  // mora se ulogovati prvo
+            return ResponseEntity.status(401).build();  // must log in first
         }
 
         boolean isOwner = chatShareService.isOwnerByEmail(sessionId, user.getEmail());
@@ -68,7 +68,7 @@ public class SharedChatController {
         return ResponseEntity.ok(Map.of(
                 "status", "success",
                 "messages", formattedMessages,
-                "readOnly", !isOwner   // frontend koristi ovo da sakrije input polje
+                "readOnly", !isOwner   // the frontend uses this to hide the input field
         ));
     }
 }

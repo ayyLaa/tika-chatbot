@@ -19,10 +19,13 @@ public class MessageFeedback {
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    // getteri/setteri
+    // getters/setters
     public UUID getId() { return id; }
     public UUID getMessageId() { return messageId; }
     public void setMessageId(UUID messageId) { this.messageId = messageId; }
     public Short getRating() { return rating; }
     public void setRating(Short rating) { this.rating = rating; }
+    public String getComment() { return comment; }
+    public void setComment(String comment) { this.comment = comment; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
 }

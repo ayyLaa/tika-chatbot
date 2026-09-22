@@ -2,7 +2,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* Kurumsal Renk Paleti */
+  /* Corporate Color Palette */
   --color-tika-red: #E30613;
   --color-tika-redHover: #C80510;
   --color-tika-navy: #0B1B3D;
@@ -13,16 +13,16 @@
   --color-tika-textBody: #333333;
   --color-tika-footer: #777777;
 
-  /* Font Aileleri */
+  /* Font Families */
   --font-cursive: "Caveat", cursive;
   --font-sans: "Plus Jakarta Sans", sans-serif;
 
-  /* Özel Mesaj Balonu Yuvarlatmaları */
+  /* Custom Message Bubble Roundings */
   --radius-user-bubble: 12px 12px 2px 12px;
   --radius-bot-bubble: 12px 12px 12px 2px;
 }
 
-/* Tipografi Hiyerarşisi Sınıfları */
+/* Typography Hierarchy Classes */
 .font-slogan {
   font-family: var(--font-cursive);
   font-size: 34px;

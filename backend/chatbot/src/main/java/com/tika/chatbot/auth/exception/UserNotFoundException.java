@@ -5,7 +5,7 @@ import java.util.UUID;
 public class UserNotFoundException extends RuntimeException {
     public UserNotFoundException(UUID userId) {
 
-        super("User with " + userId + " not found");
+        super(userId + " kimliğine sahip kullanıcı bulunamadı.");
     }
     public UserNotFoundException(String message) {
         super(message);

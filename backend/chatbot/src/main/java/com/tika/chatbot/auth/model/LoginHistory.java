@@ -25,12 +25,12 @@ public class LoginHistory {
     @Column(name = "date_time", nullable = false)
     private LocalDateTime dateTime;
 
-    // --- Konstruktori ---
+    // --- Constructors ---
     public LoginHistory() {
-        // JPA zahtijeva prazan konstruktor
+        // JPA requires an empty constructor
     }
 
-    // --- Getteri i Setteri (OVO RJEŠAVA TVOJU GREŠKU) ---
+    // --- Getters and Setters (THIS FIXES YOUR ERROR) ---
 
     public UUID getId() {
         return id;

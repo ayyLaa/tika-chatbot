@@ -64,12 +64,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ExpiredJwtException.class)
     public ResponseEntity<ErrorResponse> handleExpiredJwt(ExpiredJwtException ex, HttpServletRequest req) {
-        return build(HttpStatus.UNAUTHORIZED, "Session expired. Login again", req);
+        return build(HttpStatus.UNAUTHORIZED, "Oturum süresi doldu. Lütfen tekrar giriş yapın.", req);
     }
 
     @ExceptionHandler(JwtException.class)
     public ResponseEntity<ErrorResponse> handleJwtException(JwtException ex, HttpServletRequest req) {
-        return build(HttpStatus.UNAUTHORIZED, "Invalid token", req);
+        return build(HttpStatus.UNAUTHORIZED, "Geçersiz token.", req);
     }
 
 
@@ -78,14 +78,14 @@ public class GlobalExceptionHandler {
         String message = ex.getBindingResult().getFieldErrors().stream()
                 .findFirst()
                 .map(err -> err.getDefaultMessage())
-                .orElse("Incorrect data in the request.");
+                .orElse("İstekte hatalı veri bulunuyor.");
         return build(HttpStatus.BAD_REQUEST, message, req);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(Exception ex, HttpServletRequest req) {
         logger.error("Unexpected error {}", req.getRequestURI(), ex);
-        return build(HttpStatus.INTERNAL_SERVER_ERROR, "There was an error on the server.", req);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Sunucuda bir hata oluştu.", req);
     }
     @ExceptionHandler(InviteAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleInviteExists(InviteAlreadyExistsException ex, HttpServletRequest req) {
