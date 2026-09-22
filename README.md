@@ -1,6 +1,6 @@
-# TİKAİ — TİKA Internal AI Assistant
+# TİKAİ - TİKA Internal AI Assistant
 
-TİKAİ is a Retrieval-Augmented Generation (RAG) based AI assistant developed for internal use within TİKA (Turkish Cooperation and Coordination Agency), Department of Information Technology (Bilgi İşlem Dairesi Başkanlığı). It allows staff to search institutional documents, regulations, organizational structure, and procedures through natural-language questions in Turkish or English.
+TİKAİ is a Retrieval-Augmented Generation (RAG) based AI assistant developed for internal use within TİKA (Turkish Cooperation and Coordination Agency). It allows staff to search institutional documents, regulations, organizational structure, and procedures through natural-language questions in Turkish or English.
 
 ## Purpose
 
